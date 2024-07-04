@@ -1,0 +1,141 @@
+apiVersion: monitoring.coreos.com/v1alpha1
+kind: AlertmanagerConfig
+metadata:
+  name: global-alertmanager-configuration
+  namespace: {{ template "kube-prometheus-stack.namespace" . }}
+spec:
+  # Inhibition rules allow to mute a set of alerts given that another alert is
+  # firing.
+  # We use this to mute any warning-level notifications if the same alert is
+  # already critical.
+  inhibitRules:
+    - sourceMatch:
+        - name: 'severity'
+          matchType: '='
+          value: 'critical'
+      targetMatch:
+        - name: 'severity'
+          matchType: '=~'
+          value: 'warning|info'
+      equal:
+        - 'namespace'
+        - 'alertname'
+    - sourceMatch:
+        - name: 'severity'
+          matchType: '='
+          value: 'warning'
+      targetMatch:
+        - name: 'severity'
+          matchType: '='
+          value: 'info'
+      equal:
+        - 'namespace'
+        - 'alertname'
+    - sourceMatch:
+        - name: 'alertname'
+          matchType: '='
+          value: 'InfoInhibitor'
+      targetMatch:
+        - name: 'severity'
+          matchType: '='
+          value: 'info'
+      equal:
+        - 'namespace'
+  receivers:
+    - name: 'null'
+    - name: 'email'
+      emailConfigs:
+        - sendResolved: true
+          tlsConfig:
+            insecureSkipVerify: true
+          smarthost: 'localhost:25'
+          authUsername: 'alertmanager'
+          authPassword:
+            name: 'email-password'
+            key: 'authPassword'
+          from: 'alertmanager@example.org'
+          to: 'xxx@example.org'
+    - name: 'dingtalk'
+      webhookConfigs:
+        - sendResolved: true
+          url: 'http://prometheus-webhook-dingtalk/dingtalk/webhook/send'
+          maxAlerts: 0
+    - name: 'wechat'
+      wechatConfigs:
+        - sendResolved: true
+          apiURL: 'https://qyapi.weixin.qq.com/cgi-bin/'
+          apiSecret:
+            name: 'wechat-api-secret'
+            key: 'apiSecret'
+          corpID: 'xxx'
+  route:
+    # A default receiver
+    receiver: 'null'
+    # The labels by which incoming alerts are grouped together. For example,
+    # multiple alerts coming in for cluster=A and alertname=LatencyHigh would
+    # be batched into a single group.
+    #
+    # To aggregate by all possible labels use '...' as the sole label name.
+    # This effectively disables aggregation entirely, passing through all
+    # alerts as-is. This is unlikely to be what you want, unless you have
+    # a very low alert volume or your upstream notification system performs
+    # its own grouping. Example: group_by: [...]
+    groupBy: ['alertname', 'job']
+
+    # When a new group of alerts is created by an incoming alert, wait at
+    # least 'group_wait' to send the initial notification.
+    # This way ensures that you get multiple alerts for the same group that start
+    # firing shortly after another are batched together on the first
+    # notification.
+    groupWait: 30s
+
+    # When the first notification was sent, wait 'group_interval' to send a batch
+    # of new alerts that started firing for that group.
+    groupInterval: 5m
+
+    # If an alert has successfully been sent, wait 'repeat_interval' to
+    # resend them.
+    repeatInterval: 4h
+
+    routes:
+      - receiver: 'null'
+        matchers:
+          - name: 'alertname'
+            matchType: '=~'
+            value: 'InfoInhibitor|Watchdog'
+      - receiver: 'dingtalk'
+        matchers:
+          - name: 'severity'
+            matchType: '='
+            value: 'critical'
+        continue: true
+        group_wait: 10s
+        repeat_interval: 1h
+      - receiver: 'email'
+        matchers:
+          - name: 'severity'
+            matchType: '=~'
+            value: 'warning|info'
+        continue: true
+
+---
+apiVersion: v1
+kind: Secret
+type: Opaque
+metadata:
+  name: email-password
+  namespace: {{ template "kube-prometheus-stack.namespace" . }}
+data:
+  # echo <password> | base64 -
+  authPassword: cGFzc3dvcmQK
+
+---
+apiVersion: v1
+kind: Secret
+type: Opaque
+metadata:
+  name: wechat-api-secret
+  namespace: {{ template "kube-prometheus-stack.namespace" . }}
+data:
+  # echo <apiSecret> | base64 -
+  apiSecret: YXBpU2VjcmV0Cg==

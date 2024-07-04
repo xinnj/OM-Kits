@@ -1,0 +1,29 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "prometheus-webhook-dingtalk.fullname" . }}
+data:
+  config.yaml: |
+    ##
+    # This config is for prometheus-webhook-dingtalk instead of Kubernetes!
+    ##
+
+    ## Request timeout
+    # timeout: 5s
+
+    ## Customizable templates path
+    templates:
+      - /config/template.tmpl
+    targets:
+      webhook:
+        url: https://oapi.dingtalk.com/robot/send?access_token=xxxxxxxxxxxx
+        # secret for signature
+        secret: SEC000000000000000000000
+  template.tmpl: |
+    {{/*
+
+    Here you can add your customized templates.
+
+    See: https://github.com/timonwong/prometheus-webhook-dingtalk/blob/master/template/default.tmpl
+
+    */}}
