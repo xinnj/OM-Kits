@@ -6,50 +6,40 @@ import (
 	"golang.org/x/exp/slices"
 	"net"
 	"net/mail"
-	"regexp"
 	"strings"
 )
 
 type BasicInfo struct {
 	host         string
 	httpsEnabled bool
-	team         string
 	timezone     string
 	tlsCert      TlsCert
 }
 type TlsCert struct {
-	certMethod         string
-	forceSslRedirect   bool
-	existingCertSecret string
-	acmeEmail          string
+	certMethod       string
+	forceSslRedirect bool
+	acmeEmail        string
 }
 type CertMethod struct {
-	defaultTlsSecret  string
-	existingTlsSecret string
-	certManager       string
+	defaultTlsSecret string
+	certManager      string
 }
 
 var certMethod = CertMethod{
-	defaultTlsSecret:  "Default TLS Secret (Secret name: default-tls, Namespace: default)",
-	existingTlsSecret: "Existing TLS Secret",
-	certManager:       "Cert Manager",
+	defaultTlsSecret: "Default TLS Secret (Secret name: default-tls, Namespace: default)",
+	certManager:      "Cert Manager",
 }
 
-var basicInfo = BasicInfo{host: "", httpsEnabled: false, team: "default", timezone: "", tlsCert: TlsCert{
-	certMethod:         "",
-	forceSslRedirect:   false,
-	existingCertSecret: "",
-	acmeEmail:          "",
+var basicInfo = BasicInfo{host: "", httpsEnabled: false, timezone: "", tlsCert: TlsCert{
+	certMethod:       "",
+	forceSslRedirect: false,
+	acmeEmail:        "",
 }}
 
 func initFlexBasicInfo() {
 	flexBasicInfo.Clear()
 	formBasicInfo := tview.NewForm()
 	formBasicInfo.SetTitle("Basic Info").SetBorder(true)
-
-	formBasicInfo.AddInputField("Team: ", basicInfo.team, 0, nil, func(text string) {
-		basicInfo.team = strings.Trim(text, " ")
-	})
 
 	if basicInfo.timezone == "" {
 		var err error
@@ -86,23 +76,6 @@ func initFlexBasicInfo() {
 				}
 			})
 
-		if basicInfo.tlsCert.certMethod == certMethod.existingTlsSecret {
-			reTeam := regexp.MustCompile("^[a-z0-9]([-a-z0-9]*[a-z0-9])?$")
-			matches := reTeam.FindStringSubmatch(basicInfo.team)
-			if matches == nil {
-				showErrorModal("Format of team is wrong:\n" + basicInfo.team +
-					"\nName must consist of lower case alphanumeric characters or '-', and must start and end with an alphanumeric character.")
-				return
-			}
-
-			result, err := execCommand("kubectl get secret --no-headers --field-selector type=kubernetes.io/tls -o custom-columns=\":metadata.name\" -n "+basicInfo.team, 0)
-			check(err)
-			tlsSecrets := strings.Split(strings.TrimSpace(string(result)), "\n")
-			formBasicInfo.AddDropDown("  Select a TLS secret: ", tlsSecrets, -1, func(option string, optionIndex int) {
-				basicInfo.tlsCert.existingCertSecret = option
-			})
-		}
-
 		if basicInfo.tlsCert.certMethod == certMethod.certManager {
 			formBasicInfo.AddInputField("    Email: ", basicInfo.tlsCert.acmeEmail, 0, nil,
 				func(text string) {
@@ -114,14 +87,6 @@ func initFlexBasicInfo() {
 	formDown := tview.NewForm()
 
 	formDown.AddButton("Next", func() {
-		reTeam := regexp.MustCompile("^[a-z0-9]([-a-z0-9]*[a-z0-9])?$")
-		matches := reTeam.FindStringSubmatch(basicInfo.team)
-		if matches == nil {
-			showErrorModal("Format of team is wrong:\n" + basicInfo.team +
-				"\nName must consist of lower case alphanumeric characters or '-', and must start and end with an alphanumeric character.")
-			return
-		}
-
 		if basicInfo.host == "" {
 			showErrorModal("Custer domain name or IP is empty.")
 			return
@@ -151,13 +116,6 @@ func initFlexBasicInfo() {
 				}
 			}
 
-			if basicInfo.tlsCert.certMethod == certMethod.existingTlsSecret {
-				if basicInfo.tlsCert.existingCertSecret == "" {
-					showErrorModal("Existing TLS secret is empty.")
-					return
-				}
-			}
-
 			if basicInfo.tlsCert.certMethod == certMethod.certManager {
 				email, err := mail.ParseAddress(basicInfo.tlsCert.acmeEmail)
 				if err != nil {
@@ -169,8 +127,8 @@ func initFlexBasicInfo() {
 			}
 		}
 
-		initFlexStorage()
-		pages.SwitchToPage("Storage")
+		initFlexPackages()
+		pages.SwitchToPage("Packages")
 	})
 
 	formDown.AddButton("Quit", func() {

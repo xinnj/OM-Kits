@@ -3357,7 +3357,7 @@ prometheus:
       volumeClaimTemplate:
         spec:
           storageClassName: ${IDO_STORAGE_CLASS}
-          accessModes: ["ReadWriteMany"]
+          accessModes: ["ReadWriteOnce"]
           resources:
             requests:
               storage: ${IDO_PROMETHEUS_STORAGE_SIZE}

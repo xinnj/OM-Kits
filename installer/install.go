@@ -109,7 +109,6 @@ func initFlexInstall() {
 }
 
 func buildTasks() (tasks []task, envs []string) {
-	envs = append(envs, "IDO_TEAM="+basicInfo.team)
 	envs = append(envs, "IDO_TIMEZONE="+basicInfo.timezone)
 	envs = append(envs, "IDO_CLUSTER_HOSTNAME="+basicInfo.host)
 
@@ -130,9 +129,6 @@ func buildTasks() (tasks []task, envs []string) {
 		case certMethod.defaultTlsSecret:
 			envs = append(envs, "IDO_TLS_ACME=false")
 			envs = append(envs, "IDO_TLS_SECRET=")
-		case certMethod.existingTlsSecret:
-			envs = append(envs, "IDO_TLS_ACME=false")
-			envs = append(envs, "IDO_TLS_SECRET="+basicInfo.tlsCert.existingCertSecret)
 		case certMethod.certManager:
 			envs = append(envs, "IDO_TLS_ACME=true")
 			envs = append(envs, "IDO_TLS_SECRET="+basicInfo.host)
@@ -146,12 +142,6 @@ func buildTasks() (tasks []task, envs []string) {
 		envs = append(envs, "IDO_TLS_SECRET=")
 	}
 	envs = append(envs, "IDO_FORCE_SSL_REDIRECT="+strconv.FormatBool(basicInfo.tlsCert.forceSslRedirect))
-
-	if basicInfo.team == "default" {
-		envs = append(envs, "IDO_TEAM_URL="+clusterUrl)
-	} else {
-		envs = append(envs, "IDO_TEAM_URL="+clusterUrl+"/"+basicInfo.team)
-	}
 
 	var finalMirrors map[string]string
 	if enableMirror {
@@ -173,13 +163,22 @@ func buildTasks() (tasks []task, envs []string) {
 		envs = append(envs, k+"="+v)
 	}
 
-	tasks = append(tasks, task{name: "Populate Configuration",
-		command: "chmod +x packages/populate-configuration.sh; packages/populate-configuration.sh"})
-
 	if basicInfo.httpsEnabled && basicInfo.tlsCert.certMethod == certMethod.certManager {
 		tasks = append(tasks, task{name: "Install Cert-manager",
 			command: "chmod +x packages/cert-manager/install.sh; packages/cert-manager/install.sh"})
 		envs = append(envs, "IDO_ACME_EMAIL="+basicInfo.tlsCert.acmeEmail)
+	}
+
+	if installLocalPathProvisioner {
+		tasks = append(tasks, task{name: "Install Local-Path Provisioner",
+			command: "chmod +x packages/storage/local-path/install.sh; packages/storage/local-path/install.sh"})
+	}
+
+	if installNfsProvisioner {
+		tasks = append(tasks, task{name: "Install NFS Provisioner",
+			command: "chmod +x packages/storage/nfs/install.sh; packages/storage/nfs/install.sh"})
+		envs = append(envs, "IDO_NFS_SERVER="+nfsProvisionerConfig.server)
+		envs = append(envs, "IDO_NFS_PATH="+nfsProvisionerConfig.path)
 	}
 
 	if installPrometheus {
@@ -196,97 +195,6 @@ func buildTasks() (tasks []task, envs []string) {
 		} else {
 			envs = append(envs, "IDO_ENABLE_PROMETHEUS=false")
 		}
-	}
-
-	if !useExistingSC {
-		switch storageClass {
-		case storageClassType.ceph:
-			tasks = append(tasks, task{name: "Install Ceph",
-				command: "chmod +x packages/storage/ceph/install.sh; packages/storage/ceph/install.sh"})
-		case storageClassType.nfs:
-			tasks = append(tasks, task{name: "Install nfs",
-				command: "chmod +x packages/storage/nfs/install.sh; packages/storage/nfs/install.sh"})
-			envs = append(envs, "IDO_NFS_SERVER="+nfsConfig.server)
-			envs = append(envs, "IDO_NFS_PATH="+nfsConfig.path)
-		}
-	}
-	envs = append(envs, "IDO_STORAGE_CLASS="+storageClass)
-
-	if installKeycloak {
-		tasks = append(tasks, task{name: "Install Keycloak",
-			command: "chmod +x packages/keycloak/install.sh; packages/keycloak/install.sh"})
-		envs = append(envs, "IDO_KEYCLOAK_PG_STORAGE_SIZE="+strconv.Itoa(keycloakConfig.dbStorageSizeGi)+"Gi")
-	}
-
-	if installGitea {
-		tasks = append(tasks, task{name: "Install Gitea",
-			command: "chmod +x packages/gitea/install.sh; packages/gitea/install.sh"})
-		envs = append(envs, "IDO_GITEA_SHARED_STORAGE_SIZE="+strconv.Itoa(giteaConfig.giteaSharedStorageSizeGi)+"Gi")
-		envs = append(envs, "IDO_GITEA_PG_STORAGE_SIZE="+strconv.Itoa(giteaConfig.giteaPgStorageSizeGi)+"Gi")
-		envs = append(envs, "IDO_GITEA_SSH_NODE_PORT="+giteaConfig.sshNodePort)
-	}
-
-	if installZentao {
-		tasks = append(tasks, task{name: "Install Zentao",
-			command: "chmod +x packages/zentao/install.sh; packages/zentao/install.sh"})
-		envs = append(envs, "IDO_ZENTAO_STORAGE_SIZE="+strconv.Itoa(zentaoConfig.zentaoStorageSizeGi)+"Gi")
-		envs = append(envs, "IDO_ZENTAO_DB_STORAGE_SIZE="+strconv.Itoa(zentaoConfig.zentaoDbStorageSizeGi)+"Gi")
-	}
-
-	if installJenkins {
-		tasks = append(tasks, task{name: "Install Jenkins",
-			command: "chmod +x packages/jenkins/install.sh; packages/jenkins/install.sh"})
-		envs = append(envs, "IDO_JENKINS_CONTROLLER_STORAGE_SIZE="+strconv.Itoa(jenkinsConfig.controllerStorageSizeGi)+"Gi")
-		envs = append(envs, "IDO_JENKINS_AGENT_STORAGE_SIZE="+strconv.Itoa(jenkinsConfig.agentStorageSizeGi)+"Gi")
-		envs = append(envs, "IDO_JENKINS_LIB_VERSION="+jenkinsConfig.pipelineLibVersion)
-	}
-
-	if installNexus {
-		tasks = append(tasks, task{name: "Install Nexus",
-			command: "chmod +x packages/nexus/install.sh; packages/nexus/install.sh"})
-		envs = append(envs, "IDO_NEXUS_STORAGE_SIZE="+strconv.Itoa(nexusConfig.storageSizeGi)+"Gi")
-		envs = append(envs, "IDO_NEXUS_DOCKER_NODE_PORT="+nexusConfig.dockerNodePort)
-	}
-
-	if installFileServer {
-		tasks = append(tasks, task{name: "Install File Server",
-			command: "chmod +x packages/file-server/install.sh; packages/file-server/install.sh"})
-		envs = append(envs, "IDO_FILE_STORAGE_SIZE="+strconv.Itoa(fileServerConfig.storageSizeGi)+"Gi")
-	}
-
-	if installSmb {
-		tasks = append(tasks, task{name: "Install Samba Server",
-			command: "chmod +x packages/samba-server/install.sh; packages/samba-server/install.sh"})
-		envs = append(envs, "IDO_SMB_NODE_PORT="+smbConfig.nodePort)
-	}
-
-	if installSonar {
-		tasks = append(tasks, task{name: "Install Sonarqube",
-			command: "chmod +x packages/sonar/install.sh; packages/sonar/install.sh"})
-		envs = append(envs, "IDO_SONAR_STORAGE_SIZE="+strconv.Itoa(sonarConfig.storageSizeGi)+"Gi")
-		envs = append(envs, "IDO_SONAR_PG_STORAGE_SIZE="+strconv.Itoa(sonarConfig.dbStorageSizeGi)+"Gi")
-	}
-
-	// backup
-	if enableBackup {
-		tasks = append(tasks, task{name: "Install Velero",
-			command: "chmod +x packages/velero/install.sh; packages/velero/install.sh"})
-
-		envs = append(envs, "IDO_BACKUP_PROVIDER="+backupInfo.provider)
-		envs = append(envs, "IDO_BACKUP_BUCKET="+backupInfo.bucket)
-		envs = append(envs, "IDO_BACKUP_LOCATION_CONFIG="+backupInfo.locationConfig)
-		envs = append(envs, "IDO_BACKUP_REGION="+backupInfo.region)
-		envs = append(envs, "IDO_BACKUP_CLOUD_SECRET="+backupInfo.cloudSecret)
-		envs = append(envs, "IDO_BACKUP_SCHEDULE="+backupInfo.schedule)
-		envs = append(envs, "IDO_BACKUP_TTL="+strconv.Itoa(backupInfo.ttl)+"h")
-
-		backupSelectors := ""
-		for key, value := range backupInfo.backupItems {
-			if value {
-				backupSelectors = backupSelectors + "        - matchLabels:\n            velero.io/backup-app: " + key + "\n"
-			}
-		}
-		envs = append(envs, "IDO_BACKUP_SELECTORS="+backupSelectors)
 	}
 
 	tasks = append(tasks, task{name: "Final Check",

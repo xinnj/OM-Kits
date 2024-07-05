@@ -40,7 +40,6 @@ func main() {
 	pages.AddPage("Quit", modalQuit, true, false)
 
 	pages.AddPage("Basic Info", flexBasicInfo, true, true)
-	pages.AddPage("Storage", flexStorage, true, false)
 	pages.AddPage("Packages", flexPackages, true, false)
 	pages.AddPage("Mirror", flexMirror, true, false)
 	pages.AddPage("Install", flexInstall, true, false)
