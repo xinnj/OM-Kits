@@ -1,4 +1,4 @@
-module ido-cluster-installer
+module om-kits-installer
 
 go 1.19
 

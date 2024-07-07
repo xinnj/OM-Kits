@@ -1,0 +1,33 @@
+name: Release
+
+on:
+  release:
+    types: [ published ]
+
+jobs:
+
+  build:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v3
+
+    - name: Set up Go
+      uses: actions/setup-go@v4
+      with:
+        go-version: '1.20'
+
+    - name: Build
+      run: |
+        cd installer
+        go build
+        mv om-kits-installer ../
+
+    - name: Package
+      run: |
+        chmod +x om-kits-installer packages/*.sh
+        tar czf om-kits-installer-${{ github.ref_name }}.tgz --transform 's,^,om-kits-installer-${{ github.ref_name }}/,' packages images om-kits-installer LICENSE README.md
+
+    - name: Release
+      uses: softprops/action-gh-release@v1
+      with:
+        files: om-kits-installer-${{ github.ref_name }}.tgz

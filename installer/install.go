@@ -187,14 +187,7 @@ func buildTasks() (tasks []task, envs []string) {
 		envs = append(envs, "IDO_ALTERMANAGER_STORAGE_SIZE="+strconv.Itoa(prometheusConfig.alertmanagerStorageSizeGi)+"Gi")
 		envs = append(envs, "IDO_GRAFANA_STORAGE_SIZE="+strconv.Itoa(prometheusConfig.grafanaStorageSizeGi)+"Gi")
 		envs = append(envs, "IDO_PROMETHEUS_STORAGE_SIZE="+strconv.Itoa(prometheusConfig.prometheusStorageSizeGi)+"Gi")
-		envs = append(envs, "IDO_ENABLE_PROMETHEUS=true")
-	} else {
-		_, err := execCommand("helm -n monitoring status prometheus", 0)
-		if err == nil {
-			envs = append(envs, "IDO_ENABLE_PROMETHEUS=true")
-		} else {
-			envs = append(envs, "IDO_ENABLE_PROMETHEUS=false")
-		}
+		envs = append(envs, "IDO_PROMETHEUS_STORAGE_CLASS="+prometheusConfig.storageClass)
 	}
 
 	tasks = append(tasks, task{name: "Final Check",
