@@ -2,7 +2,7 @@ replicaCount: 1
 strategyType: Recreate
 
 image:
-  repository: ${IDO_GCR_CONTAINER_MIRROR}/sig-storage/nfs-subdir-external-provisioner
+  repository: ${IDO_K8S_CONTAINER_MIRROR}/sig-storage/nfs-subdir-external-provisioner
   tag: v4.0.2
   pullPolicy: IfNotPresent
 imagePullSecrets: []
@@ -115,3 +115,7 @@ affinity:
 
 # Additional labels for any resource created
 labels: {}
+
+podDisruptionBudget:
+  enabled: false
+  maxUnavailable: 1

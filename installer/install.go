@@ -155,7 +155,7 @@ func buildTasks() (tasks []task, envs []string) {
 		finalMirrors = map[string]string{
 			"IDO_DOCKER_CONTAINER_MIRROR": "docker.io",
 			"IDO_QUAY_CONTAINER_MIRROR":   "quay.io",
-			"IDO_K8S_CONTAINER_MIRROR":    "k8s.io",
+			"IDO_K8S_CONTAINER_MIRROR":    "registry.k8s.io",
 			"IDO_GCR_CONTAINER_MIRROR":    "k8s-gcr.io",
 		}
 	}
