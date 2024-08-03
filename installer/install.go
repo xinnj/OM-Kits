@@ -8,6 +8,7 @@ import (
 	"os"
 	"os/exec"
 	"strconv"
+	"strings"
 	"syscall"
 	"time"
 )
@@ -175,10 +176,18 @@ func buildTasks() (tasks []task, envs []string) {
 	}
 
 	if installNfsProvisioner {
+		options := strings.Split(nfsProvisionerConfig.mountOptions, ",")
+		optionsString := ""
+		if len(options) > 0 {
+			for oneOption := range options {
+				optionsString = optionsString + "    - " + options[oneOption] + "\n"
+			}
+		}
 		tasks = append(tasks, task{name: "Install NFS Provisioner",
 			command: "chmod +x packages/storage/nfs/install.sh; packages/storage/nfs/install.sh"})
 		envs = append(envs, "IDO_NFS_SERVER="+nfsProvisionerConfig.server)
 		envs = append(envs, "IDO_NFS_PATH="+nfsProvisionerConfig.path)
+		envs = append(envs, "IDO_NFS_MOUNTOPTIONS="+optionsString)
 	}
 
 	if installPrometheus {

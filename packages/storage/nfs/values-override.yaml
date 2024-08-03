@@ -11,9 +11,11 @@ nfs:
   server: ${IDO_NFS_SERVER}
   path: ${IDO_NFS_PATH}
   mountOptions:
-  volumeName: nfs-subdir-external-provisioner-root
-  # Reclaim policy for the main nfs volume
-  reclaimPolicy: Retain
+${IDO_NFS_MOUNTOPTIONS}
+
+volumeName: nfs-subdir-external-provisioner-root
+# Reclaim policy for the main nfs volume
+reclaimPolicy: Retain
 
 # For creating the StorageClass automatically:
 storageClass:
@@ -93,10 +95,10 @@ serviceAccount:
   name:
 
 resources:
-   limits:
+  limits:
     cpu: 200m
     memory: 256Mi
-   requests:
+  requests:
     cpu: 100m
     memory: 128Mi
 

@@ -9,8 +9,9 @@ import (
 )
 
 type NfsProvisionerConfig struct {
-	server string
-	path   string
+	server       string
+	path         string
+	mountOptions string
 }
 
 func (config *NfsProvisionerConfig) validate() error {
@@ -48,8 +49,9 @@ var installNfsProvisioner = false
 var installPrometheus = false
 
 var nfsProvisionerConfig = NfsProvisionerConfig{
-	server: "",
-	path:   "",
+	server:       "",
+	path:         "/",
+	mountOptions: "vers=3,nolock,proto=tcp,rsize=1048576,wsize=1048576,hard,timeo=600,retrans=2,noresvport",
 }
 
 var prometheusConfig = PrometheusConfig{
@@ -139,13 +141,17 @@ func selectPackage(index int, mainText string) {
 		})
 		if installNfsProvisioner {
 			listPackages.SetItemText(index, mainText, "Will install")
-			formPackage.AddInputField("NFS server: ", nfsProvisionerConfig.server,
+			formPackage.AddInputField("Server: ", nfsProvisionerConfig.server,
 				0, nil, func(text string) {
 					nfsProvisionerConfig.server = text
 				})
-			formPackage.AddInputField("NFS Path: ", nfsProvisionerConfig.path,
+			formPackage.AddInputField("Path: ", nfsProvisionerConfig.path,
 				0, nil, func(text string) {
 					nfsProvisionerConfig.path = text
+				})
+			formPackage.AddInputField("Mount options: ", nfsProvisionerConfig.mountOptions,
+				0, nil, func(text string) {
+					nfsProvisionerConfig.mountOptions = text
 				})
 		}
 	case "Prometheus":
