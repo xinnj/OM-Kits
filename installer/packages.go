@@ -44,9 +44,28 @@ func (config *PrometheusConfig) validate() error {
 	return nil
 }
 
+type LoggingConfig struct {
+	collectNamespaces string
+	storageClass      string
+	esStorageSizeGi   int
+	esIndexAgeDay     int
+	nodeAffinity      bool
+}
+
+func (config *LoggingConfig) validate() error {
+	if config.esStorageSizeGi == 0 {
+		return errors.New("Elasticsearch storage size is 0.")
+	}
+	if config.esIndexAgeDay == 0 {
+		return errors.New("Index age is 0.")
+	}
+	return nil
+}
+
 var installLocalPathProvisioner = false
 var installNfsProvisioner = false
 var installPrometheus = false
+var installLogging = false
 
 var nfsProvisionerConfig = NfsProvisionerConfig{
 	server:       "",
@@ -61,8 +80,16 @@ var prometheusConfig = PrometheusConfig{
 	storageClass:              "",
 }
 
+var efkConfig = LoggingConfig{
+	collectNamespaces: "",
+	storageClass:      "",
+	esStorageSizeGi:   20,
+	esIndexAgeDay:     7,
+	nodeAffinity:      true,
+}
+
 var storageClasses []string
-var packages = []string{"Local-Path Provisioner", "NFS Provisioner", "Prometheus"}
+var packages = []string{"Local-Path Provisioner", "NFS Provisioner", "Prometheus", "Logging"}
 var listPackages = tview.NewList()
 var formPackage = tview.NewForm()
 
@@ -178,6 +205,35 @@ func selectPackage(index int, mainText string) {
 				0, nil, func(text string) {
 					prometheusConfig.prometheusStorageSizeGi, _ = strconv.Atoi(text)
 				})
+		}
+	case "Logging":
+		formPackage.AddCheckbox("Install Logging: ", installLogging, func(checked bool) {
+			installLogging = checked
+			selectPackage(index, mainText)
+		})
+		if installLogging {
+			listPackages.SetItemText(index, mainText, "Will install")
+
+			formPackage.AddInputField("Collect logs from namespaces\n (comma separated, empty means all): ", efkConfig.collectNamespaces,
+				0, nil, func(text string) {
+					efkConfig.collectNamespaces = text
+				})
+
+			initialOption := slices.Index(storageClasses, efkConfig.storageClass)
+			formPackage.AddDropDown("Storage Class: ", storageClasses, initialOption, func(option string, optionIndex int) {
+				efkConfig.storageClass = option
+			})
+			formPackage.AddInputField("Elasticsearch storage size (Gi): ", strconv.Itoa(efkConfig.esStorageSizeGi),
+				0, nil, func(text string) {
+					efkConfig.esStorageSizeGi, _ = strconv.Atoi(text)
+				})
+			formPackage.AddInputField("Index age (day): ", strconv.Itoa(efkConfig.esIndexAgeDay),
+				0, nil, func(text string) {
+					efkConfig.esIndexAgeDay, _ = strconv.Atoi(text)
+				})
+			formPackage.AddCheckbox("Node affinity: ", efkConfig.nodeAffinity, func(checked bool) {
+				efkConfig.nodeAffinity = checked
+			})
 		}
 	}
 }

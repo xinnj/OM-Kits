@@ -199,6 +199,34 @@ func buildTasks() (tasks []task, envs []string) {
 		envs = append(envs, "IDO_PROMETHEUS_STORAGE_CLASS="+prometheusConfig.storageClass)
 	}
 
+	if installLogging {
+		tasks = append(tasks, task{name: "Install Logging",
+			command: "chmod +x packages/logging/install.sh; packages/logging/install.sh"})
+
+		var logPath string
+		if efkConfig.collectNamespaces != "" {
+			var logPathSlice []string
+			logNamespaces := strings.Split(efkConfig.collectNamespaces, ",")
+			for namespace := range logNamespaces {
+				logPathSlice = append(logPathSlice, "/var/log/containers/*_"+logNamespaces[namespace]+"_*.log")
+			}
+			logPath = strings.Join(logPathSlice, ",")
+		} else {
+			logPath = "/var/log/containers/*.log"
+		}
+
+		nodeAffinityPreset := ""
+		if efkConfig.nodeAffinity {
+			nodeAffinityPreset = "hard"
+		}
+
+		envs = append(envs, "IDO_FLUENT_LOG_PATH="+logPath)
+		envs = append(envs, "IDO_ES_STORAGE_SIZE="+strconv.Itoa(efkConfig.esStorageSizeGi)+"Gi")
+		envs = append(envs, "IDO_ES_STORAGE_CLASS="+efkConfig.storageClass)
+		envs = append(envs, "IDO_ES_NODE_AFFINITY="+nodeAffinityPreset)
+		envs = append(envs, "IDO_ES_INDEX_AGE="+strconv.Itoa(efkConfig.esIndexAgeDay)+"d")
+	}
+
 	tasks = append(tasks, task{name: "Final Check",
 		command: "chmod +x packages/final-check.sh; packages/final-check.sh"})
 

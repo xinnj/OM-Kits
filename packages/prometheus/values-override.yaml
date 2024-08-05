@@ -1068,7 +1068,21 @@ grafana:
 
   ## Configure additional grafana datasources (passed through tpl)
   ## ref: http://docs.grafana.org/administration/provisioning/#datasources
-  additionalDataSources: []
+  additionalDataSources:
+    - name: Elasticsearch
+      orgId: 1
+      type: elasticsearch
+      access: proxy
+      url: "http://elasticsearch.logging:9200"
+      basicAuth: false
+      isDefault: false
+      jsonData:
+        index: "logstash-*"
+        logLevelField: level
+        logMessageField: log
+        timeField: "@timestamp"
+      readOnly: false
+
   # - name: prometheus-sample
   #   access: proxy
   #   basicAuth: true
