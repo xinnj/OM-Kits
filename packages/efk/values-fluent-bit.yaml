@@ -198,13 +198,13 @@ readinessProbe:
     path: /api/v1/health
     port: http
 
-resources: {}
-#   limits:
-#     cpu: 100m
-#     memory: 128Mi
-#   requests:
-#     cpu: 100m
-#     memory: 128Mi
+resources:
+   limits:
+     cpu: 100m
+     memory: 128Mi
+   requests:
+     cpu: 100m
+     memory: 128Mi
 
 ## only available if kind is Deployment
 ingress:
@@ -387,14 +387,25 @@ config:
         Mem_Buf_Limit 5MB
         Skip_Long_Lines On
 
-    [INPUT]
-        Name systemd
-        Tag host.*
-        Systemd_Filter _SYSTEMD_UNIT=kubelet.service
-        Read_From_Tail On
-
   ## https://docs.fluentbit.io/manual/pipeline/filters
   filters: |
+    [FILTER]
+        name multiline
+        match kube.*
+        multiline.key_content log
+        multiline.parser simple_log_multiline
+    [FILTER]
+        Name parser
+        Match kube.*
+        Key_Name log
+        Parser simple_log
+        Reserve_Data On
+    [FILTER]
+        name record_modifier
+        match kube.*
+        remove_key stream
+        remove_key _p
+        remove_key original_time
     [FILTER]
         Name kubernetes
         Match kube.*
@@ -412,26 +423,33 @@ config:
         Logstash_Format On
         Retry_Limit False
 
-    [OUTPUT]
-        Name es
-        Match host.*
-        Host elasticsearch-master
-        Logstash_Format On
-        Logstash_Prefix node
-        Retry_Limit False
-
   ## https://docs.fluentbit.io/manual/administration/configuring-fluent-bit/classic-mode/upstream-servers
   ## This configuration is deprecated, please use `extraFiles` instead.
   upstream: {}
 
   ## https://docs.fluentbit.io/manual/pipeline/parsers
   customParsers: |
+    [MULTILINE_PARSER]
+        name simple_log_multiline
+        type regex
+        flush_timeout 1000
+        #
+        # Regex rules for multiline parsing
+        # ---------------------------------
+        #
+        # configuration hints:
+        #
+        #  - first state always has the name: start_state
+        #  - every field in the rule must be inside double quotes
+        #
+        # rules |   state name  | regex pattern                  | next state
+        # ------|---------------|--------------------------------------------
+        rule      "start_state"   "/^(\d+-\d+-\d+).*/"               "cont"
+        rule      "cont"          "/^(?!\d+-\d+-\d+).*/"             "cont"
     [PARSER]
-        Name docker_no_time
-        Format json
-        Time_Keep Off
-        Time_Key time
-        Time_Format %Y-%m-%dT%H:%M:%S.%L
+        Name simple_log
+        Format regex
+        Regex ^(?<original_time>[^|]+)\|(?<level>[^|]+)\|(?<log>.*)$
 
   # This allows adding more files with arbitrary filenames to /fluent-bit/etc/conf by providing key/value pairs.
   # The key becomes the filename, the value becomes the file content.
