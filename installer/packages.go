@@ -50,6 +50,7 @@ type LoggingConfig struct {
 	esStorageSizeGi   int
 	esIndexAgeDay     int
 	nodeAffinity      bool
+	errorLogAlert     bool
 }
 
 func (config *LoggingConfig) validate() error {
@@ -80,12 +81,13 @@ var prometheusConfig = PrometheusConfig{
 	storageClass:              "",
 }
 
-var efkConfig = LoggingConfig{
+var loggingConfig = LoggingConfig{
 	collectNamespaces: "",
 	storageClass:      "",
 	esStorageSizeGi:   20,
 	esIndexAgeDay:     7,
 	nodeAffinity:      true,
+	errorLogAlert:     false,
 }
 
 var storageClasses []string
@@ -214,25 +216,28 @@ func selectPackage(index int, mainText string) {
 		if installLogging {
 			listPackages.SetItemText(index, mainText, "Will install")
 
-			formPackage.AddInputField("Collect logs from namespaces\n (comma separated, empty means all): ", efkConfig.collectNamespaces,
+			formPackage.AddInputField("Collect logs from namespaces\n (comma separated, empty means all): ", loggingConfig.collectNamespaces,
 				0, nil, func(text string) {
-					efkConfig.collectNamespaces = text
+					loggingConfig.collectNamespaces = text
 				})
 
-			initialOption := slices.Index(storageClasses, efkConfig.storageClass)
+			initialOption := slices.Index(storageClasses, loggingConfig.storageClass)
 			formPackage.AddDropDown("Storage Class: ", storageClasses, initialOption, func(option string, optionIndex int) {
-				efkConfig.storageClass = option
+				loggingConfig.storageClass = option
 			})
-			formPackage.AddInputField("Elasticsearch storage size (Gi): ", strconv.Itoa(efkConfig.esStorageSizeGi),
+			formPackage.AddInputField("Elasticsearch storage size (Gi): ", strconv.Itoa(loggingConfig.esStorageSizeGi),
 				0, nil, func(text string) {
-					efkConfig.esStorageSizeGi, _ = strconv.Atoi(text)
+					loggingConfig.esStorageSizeGi, _ = strconv.Atoi(text)
 				})
-			formPackage.AddInputField("Index age (day): ", strconv.Itoa(efkConfig.esIndexAgeDay),
+			formPackage.AddInputField("Index age (day): ", strconv.Itoa(loggingConfig.esIndexAgeDay),
 				0, nil, func(text string) {
-					efkConfig.esIndexAgeDay, _ = strconv.Atoi(text)
+					loggingConfig.esIndexAgeDay, _ = strconv.Atoi(text)
 				})
-			formPackage.AddCheckbox("Node affinity: ", efkConfig.nodeAffinity, func(checked bool) {
-				efkConfig.nodeAffinity = checked
+			formPackage.AddCheckbox("Node affinity: ", loggingConfig.nodeAffinity, func(checked bool) {
+				loggingConfig.nodeAffinity = checked
+			})
+			formPackage.AddCheckbox("Send alert when ERROR level log detected: ", loggingConfig.errorLogAlert, func(checked bool) {
+				loggingConfig.errorLogAlert = checked
 			})
 		}
 	}

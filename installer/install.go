@@ -204,9 +204,9 @@ func buildTasks() (tasks []task, envs []string) {
 			command: "chmod +x packages/logging/install.sh; packages/logging/install.sh"})
 
 		var logPath string
-		if efkConfig.collectNamespaces != "" {
+		if loggingConfig.collectNamespaces != "" {
 			var logPathSlice []string
-			logNamespaces := strings.Split(efkConfig.collectNamespaces, ",")
+			logNamespaces := strings.Split(loggingConfig.collectNamespaces, ",")
 			for namespace := range logNamespaces {
 				logPathSlice = append(logPathSlice, "/var/log/containers/*_"+logNamespaces[namespace]+"_*.log")
 			}
@@ -216,15 +216,21 @@ func buildTasks() (tasks []task, envs []string) {
 		}
 
 		nodeAffinityPreset := ""
-		if efkConfig.nodeAffinity {
+		if loggingConfig.nodeAffinity {
 			nodeAffinityPreset = "hard"
 		}
 
+		alertLogLevel := "none"
+		if loggingConfig.errorLogAlert {
+			alertLogLevel = "ERROR"
+		}
+
 		envs = append(envs, "IDO_FLUENT_LOG_PATH="+logPath)
-		envs = append(envs, "IDO_ES_STORAGE_SIZE="+strconv.Itoa(efkConfig.esStorageSizeGi)+"Gi")
-		envs = append(envs, "IDO_ES_STORAGE_CLASS="+efkConfig.storageClass)
+		envs = append(envs, "IDO_ES_STORAGE_SIZE="+strconv.Itoa(loggingConfig.esStorageSizeGi)+"Gi")
+		envs = append(envs, "IDO_ES_STORAGE_CLASS="+loggingConfig.storageClass)
 		envs = append(envs, "IDO_ES_NODE_AFFINITY="+nodeAffinityPreset)
-		envs = append(envs, "IDO_ES_INDEX_AGE="+strconv.Itoa(efkConfig.esIndexAgeDay)+"d")
+		envs = append(envs, "IDO_ES_INDEX_AGE="+strconv.Itoa(loggingConfig.esIndexAgeDay)+"d")
+		envs = append(envs, "IDO_FLUENT_ALERT_LOG_LEVEL="+alertLogLevel)
 	}
 
 	tasks = append(tasks, task{name: "Final Check",

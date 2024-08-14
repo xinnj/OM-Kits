@@ -18,6 +18,13 @@ envsubst < "${base}/values-elasticsearch-override.yaml" > "${base}/values-elasti
 helm upgrade elasticsearch --install --create-namespace --namespace logging --wait --timeout 30m -f "${base}"/values-elasticsearch.yaml "${base}"/elasticsearch
 
 # Install fluent-bit
-envsubst < "${base}/values-fluent-bit-override.yaml" > "${base}/values-fluent-bit.yaml"
+envsubst '${IDO_FLUENT_LOG_PATH}, ${IDO_FLUENT_ALERT_LOG_LEVEL}' < "${base}/values-fluent-bit-override.yaml" > "${base}/values-fluent-bit.yaml"
 "${base}/../check-undefined-env.sh" "${base}/values-fluent-bit.yaml"
 helm upgrade fluent-bit --install --create-namespace --namespace logging --timeout 30m -f "${base}"/values-fluent-bit.yaml "${base}"/fluent-bit
+
+# Install fluent-bit-to-alertmanager
+if [ "$IDO_FLUENT_ALERT_LOG_LEVEL" != "none" ]; then
+  envsubst < "${base}/values-fluent-bit-to-alertmanager-override.yaml" > "${base}/values-fluent-bit-to-alertmanager.yaml"
+  "${base}/../check-undefined-env.sh" "${base}/values-fluent-bit-to-alertmanager.yaml"
+  helm upgrade fluent-bit-to-alertmanager --install --create-namespace --namespace logging --timeout 30m -f "${base}"/values-fluent-bit-to-alertmanager.yaml "${base}"/fluent-bit-to-alertmanager
+fi

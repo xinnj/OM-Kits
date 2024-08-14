@@ -60,6 +60,11 @@ spec:
         - sendResolved: true
           url: 'http://prometheus-webhook-dingtalk/dingtalk/webhook/send'
           maxAlerts: 0
+    - name: 'log'
+      webhookConfigs:
+        - sendResolved: false
+          url: 'http://prometheus-webhook-dingtalk/dingtalk/webhook/send'
+          maxAlerts: 0
     - name: 'wechat'
       wechatConfigs:
         - sendResolved: true
@@ -103,6 +108,14 @@ spec:
           - name: 'alertname'
             matchType: '=~'
             value: 'InfoInhibitor|Watchdog'
+      - receiver: 'log'
+        matchers:
+          - name: 'alertname'
+            matchType: '=~'
+            value: 'ErrorLog'
+        continue: false
+        groupBy: [ 'alertname', 'namespace', 'pod', 'time' ]
+        group_wait: 10s
       - receiver: 'dingtalk'
         matchers:
           - name: 'severity'
