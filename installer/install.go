@@ -146,11 +146,20 @@ func buildTasks() (tasks []task, envs []string) {
 
 	var finalMirrors map[string]string
 	if enableMirror {
-		finalMirrors = map[string]string{
-			"IDO_DOCKER_CONTAINER_MIRROR": mirrors["DOCKER_CONTAINER_MIRROR"],
-			"IDO_QUAY_CONTAINER_MIRROR":   mirrors["QUAY_CONTAINER_MIRROR"],
-			"IDO_K8S_CONTAINER_MIRROR":    mirrors["K8S_CONTAINER_MIRROR"],
-			"IDO_GCR_CONTAINER_MIRROR":    mirrors["GCR_CONTAINER_MIRROR"],
+		if useOneMirror {
+			finalMirrors = map[string]string{
+				"IDO_DOCKER_CONTAINER_MIRROR": oneMirror,
+				"IDO_QUAY_CONTAINER_MIRROR":   oneMirror,
+				"IDO_K8S_CONTAINER_MIRROR":    oneMirror,
+				"IDO_GCR_CONTAINER_MIRROR":    oneMirror,
+			}
+		} else {
+			finalMirrors = map[string]string{
+				"IDO_DOCKER_CONTAINER_MIRROR": mirrors["DOCKER_CONTAINER_MIRROR"],
+				"IDO_QUAY_CONTAINER_MIRROR":   mirrors["QUAY_CONTAINER_MIRROR"],
+				"IDO_K8S_CONTAINER_MIRROR":    mirrors["K8S_CONTAINER_MIRROR"],
+				"IDO_GCR_CONTAINER_MIRROR":    mirrors["GCR_CONTAINER_MIRROR"],
+			}
 		}
 	} else {
 		finalMirrors = map[string]string{

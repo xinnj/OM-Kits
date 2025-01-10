@@ -6,7 +6,14 @@ import (
 )
 
 var enableMirror = false
-var mirrors map[string]string
+var mirrors = map[string]string{
+	"DOCKER_CONTAINER_MIRROR": "docker.m.daocloud.io",
+	"QUAY_CONTAINER_MIRROR":   "quay.m.daocloud.io",
+	"K8S_CONTAINER_MIRROR":    "k8s.m.daocloud.io",
+	"GCR_CONTAINER_MIRROR":    "gcr.m.daocloud.io",
+}
+var useOneMirror = false
+var oneMirror = ""
 
 func initFlexMirror() {
 	flexMirror.Clear()
@@ -20,26 +27,29 @@ func initFlexMirror() {
 	})
 
 	if enableMirror {
-		if mirrors == nil {
-			mirrors = map[string]string{
-				"DOCKER_CONTAINER_MIRROR": "docker.m.daocloud.io",
-				"QUAY_CONTAINER_MIRROR":   "quay.m.daocloud.io",
-				"K8S_CONTAINER_MIRROR":    "k8s.m.daocloud.io",
-				"GCR_CONTAINER_MIRROR":    "k8s-gcr.m.daocloud.io",
-			}
-		}
+		formMirror.AddCheckbox("Use one mirror for all: ", useOneMirror, func(checked bool) {
+			useOneMirror = checked
+			flexMirror.Clear()
+			initFlexMirror()
+		})
 
-		var keyOrdered []string
-		for k, _ := range mirrors {
-			keyOrdered = append(keyOrdered, k)
-		}
-		slices.Sort(keyOrdered)
-
-		for _, item := range keyOrdered {
-			key := item
-			formMirror.AddInputField(item+": ", mirrors[key], 0, nil, func(text string) {
-				mirrors[key] = text
+		if useOneMirror {
+			formMirror.AddInputField("Mirror for all: ", oneMirror, 0, nil, func(text string) {
+				oneMirror = text
 			})
+		} else {
+			var keyOrdered []string
+			for k, _ := range mirrors {
+				keyOrdered = append(keyOrdered, k)
+			}
+			slices.Sort(keyOrdered)
+
+			for _, item := range keyOrdered {
+				key := item
+				formMirror.AddInputField(item+": ", mirrors[key], 0, nil, func(text string) {
+					mirrors[key] = text
+				})
+			}
 		}
 	}
 
@@ -47,9 +57,15 @@ func initFlexMirror() {
 
 	formDown.AddButton("Install", func() {
 		if enableMirror {
-			for k, v := range mirrors {
-				if v == "" {
-					showErrorModal(k + " is empty.")
+			if useOneMirror {
+				if oneMirror == "" {
+					showErrorModal("Mirror is empty.")
+				}
+			} else {
+				for k, v := range mirrors {
+					if v == "" {
+						showErrorModal(k + " is empty.")
+					}
 				}
 			}
 		}
