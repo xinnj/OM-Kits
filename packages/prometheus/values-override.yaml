@@ -986,13 +986,6 @@ grafana:
                 values:
                   - 'True'
 
-  dashboards:
-    default:
-      jenkins-dashboard:
-        file: dashboards/jenkins.json
-      ceph-dashboard:
-        file: dashboards/ceph_cluster.json
-
   sidecar:
     image:
       repository: ${IDO_QUAY_CONTAINER_MIRROR}/kiwigrid/k8s-sidecar
