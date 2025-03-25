@@ -2,7 +2,7 @@ nameOverride: ""
 fullnameOverride: ""
 
 image:
-  registry: "docker.io"
+  registry: "${IDO_DOCKER_CONTAINER_MIRROR}"
   repository: "xinnj/fluent-bit-to-alertmanager"
   pullPolicy: IfNotPresent
   # Overrides the image tag whose default is the chart appVersion.
@@ -100,6 +100,6 @@ affinity: {}
 
 env:
   - name: 'TZ'
-    value: 'Asia/Shanghai'
+    value: '${IDO_TIMEZONE}'
   - name: 'ALERTMANAGER_URL'
     value: 'http://prometheus-kube-prometheus-alertmanager.monitoring:9093/alertmanager/api/v2/'

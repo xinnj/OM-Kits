@@ -176,7 +176,7 @@ extraEnvVarsSecret: ""
 ##
 sidecars:
   - name: index-template
-    image: docker.io/bitnami/os-shell:12-debian-12-r26
+    image: ${IDO_DOCKER_CONTAINER_MIRROR}/bitnami/os-shell:12-debian-12-r26
     volumeMounts:
       - name: create-index-template
         mountPath: /scripts
@@ -725,12 +725,12 @@ master:
   ## @param master.startupProbe.failureThreshold Minimum consecutive failures for the probe to be considered failed after having succeeded
   ##
   startupProbe:
-    enabled: false
+    enabled: true
     initialDelaySeconds: 90
     periodSeconds: 10
     timeoutSeconds: 5
     successThreshold: 1
-    failureThreshold: 5
+    failureThreshold: 50
   ## @param master.livenessProbe.enabled Enable/disable the liveness probe (master-eligible nodes pod)
   ## @param master.livenessProbe.initialDelaySeconds Delay before liveness probe is initiated (master-eligible nodes pod)
   ## @param master.livenessProbe.periodSeconds How often to perform the probe (master-eligible nodes pod)

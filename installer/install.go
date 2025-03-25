@@ -216,8 +216,11 @@ func buildTasks() (tasks []task, envs []string) {
 		if loggingConfig.collectNamespaces != "" {
 			var logPathSlice []string
 			logNamespaces := strings.Split(loggingConfig.collectNamespaces, ",")
-			for namespace := range logNamespaces {
-				logPathSlice = append(logPathSlice, "/var/log/containers/*_"+logNamespaces[namespace]+"_*.log")
+			for _, namespace := range logNamespaces {
+				namespace = strings.Trim(namespace, " ")
+				if namespace != "" {
+					logPathSlice = append(logPathSlice, "/var/log/containers/*_"+namespace+"_*.log")
+				}
 			}
 			logPath = strings.Join(logPathSlice, ",")
 		} else {
