@@ -7,7 +7,7 @@ kind: DaemonSet
 replicaCount: 1
 
 image:
-  repository: cr.fluentbit.io/fluent/fluent-bit
+  repository: ${IDO_DOCKER_CONTAINER_MIRROR}/fluent/fluent-bit
   # Overrides the image tag whose default is {{ .Chart.AppVersion }}
   # Set to "-" to not use the default value
   tag:
