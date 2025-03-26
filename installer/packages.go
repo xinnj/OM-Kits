@@ -76,6 +76,8 @@ var installNfsProvisioner = false
 var installPrometheus = false
 var installLogging = false
 
+var localPathProvisionerPath = "/data/local-path-provisioner"
+
 var nfsProvisionerConfig = NfsProvisionerConfig{
 	server:       "",
 	path:         "/",
@@ -126,6 +128,12 @@ func initFlexPackages() {
 
 	formDown := tview.NewForm()
 	formDown.AddButton("Next", func() {
+		if installLocalPathProvisioner {
+			if localPathProvisionerPath == "" {
+				showErrorModal("Local-Path Provisioner path is empty.")
+			}
+		}
+
 		if installNfsProvisioner {
 			err := nfsProvisionerConfig.validate()
 			if err != nil {
@@ -172,6 +180,10 @@ func selectPackage(index int, mainText string) {
 		})
 		if installLocalPathProvisioner {
 			listPackages.SetItemText(index, mainText, "Will install")
+			formPackage.AddInputField("Path: ", localPathProvisionerPath,
+				0, nil, func(text string) {
+					localPathProvisionerPath = strings.Trim(text, " ")
+				})
 		}
 	case "NFS Provisioner":
 		formPackage.AddCheckbox("Install NFS Provisioner: ", installNfsProvisioner, func(checked bool) {

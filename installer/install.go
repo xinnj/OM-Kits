@@ -182,6 +182,7 @@ func buildTasks() (tasks []task, envs []string) {
 	if installLocalPathProvisioner {
 		tasks = append(tasks, task{name: "Install Local-Path Provisioner",
 			command: "chmod +x packages/storage/local-path/install.sh; packages/storage/local-path/install.sh"})
+		envs = append(envs, "IDO_LOCAL_PATH="+localPathProvisionerPath)
 	}
 
 	if installNfsProvisioner {
