@@ -898,6 +898,9 @@ grafana:
   ##
   defaultDashboardsTimezone: ${IDO_TIMEZONE}
 
+  dashboards:
+    default: {}
+
   adminUser: admin
   adminPassword: admin123
 
@@ -974,17 +977,6 @@ grafana:
     requests:
       cpu: 100m
       memory: 128Mi
-
-  affinity:
-    nodeAffinity:
-      preferredDuringSchedulingIgnoredDuringExecution:
-        - weight: 1
-          preference:
-            matchExpressions:
-              - key: vm-agent
-                operator: NotIn
-                values:
-                  - 'True'
 
   sidecar:
     image:

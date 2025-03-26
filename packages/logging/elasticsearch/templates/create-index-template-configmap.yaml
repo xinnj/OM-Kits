@@ -30,13 +30,13 @@ data:
           "hot": {
             "min_age": "0ms",
             "actions": {
-              "rollover": {
-                "max_age": "${IDO_ES_WARM_AGE}d"
+              "set_priority": {
+                "priority": 100
               }
             }
           },
           "warm": {
-            "min_age": "${IDO_ES_WARM_AGE}d",
+            "min_age": "'"${IDO_ES_WARM_AGE}"'d",
             "actions": {
               "set_priority": {
                 "priority": 50
@@ -47,7 +47,7 @@ data:
             }
           },
           "cold": {
-            "min_age": "${IDO_ES_COLD_AGE}d",
+            "min_age": "'"${IDO_ES_COLD_AGE}"'d",
             "actions": {
               "set_priority": {
                 "priority": 10
@@ -55,7 +55,7 @@ data:
             }
           },
           "delete": {
-            "min_age": "${IDO_ES_DELETE_AGE}d",
+            "min_age": "'"${IDO_ES_DELETE_AGE}"'d",
             "actions": {
               "delete": {
                 "delete_searchable_snapshot": true

@@ -182,11 +182,11 @@ sidecars:
         mountPath: /scripts
     env:
       - name: IDO_ES_DELETE_AGE
-        value: ${IDO_ES_DELETE_AGE}
+        value: "${IDO_ES_DELETE_AGE}"
       - name: IDO_ES_COLD_AGE
-        value: ${IDO_ES_COLD_AGE}
+        value: "${IDO_ES_COLD_AGE}"
       - name: IDO_ES_WARM_AGE
-        value: ${IDO_ES_WARM_AGE}
+        value: "${IDO_ES_WARM_AGE}"
     command:
       - /bin/bash
       - /scripts/create-index-template.sh
@@ -528,7 +528,7 @@ master:
   ## @param master.resourcesPreset Set container resources according to one common preset (allowed values: none, nano, micro, small, medium, large, xlarge, 2xlarge). This is ignored if master.resources is set (master.resources is recommended for production).
   ## More information: https://github.com/bitnami/charts/blob/main/bitnami/common/templates/_resources.tpl#L15
   ##
-  resourcesPreset: "small"
+  resourcesPreset: "medium"
   ## @param master.resources Set container requests and limits for different resources like CPU or memory (essential for production workloads)
   ## Example:
   ## resources:
