@@ -48,7 +48,9 @@ type LoggingConfig struct {
 	collectNamespaces string
 	storageClass      string
 	esStorageSizeGi   int
-	esIndexAgeDay     int
+	esDeleteAgeDay    int
+	esColdAgeDay      int
+	esWarmAgeDay      int
 	nodeAffinity      bool
 	errorLogAlert     bool
 }
@@ -57,8 +59,14 @@ func (config *LoggingConfig) validate() error {
 	if config.esStorageSizeGi == 0 {
 		return errors.New("Elasticsearch storage size is 0.")
 	}
-	if config.esIndexAgeDay == 0 {
-		return errors.New("Index age is 0.")
+	if config.esDeleteAgeDay == 0 {
+		return errors.New("Elasticsearch delete age is 0.")
+	}
+	if config.esColdAgeDay == 0 {
+		return errors.New("Elasticsearch cold age is 0.")
+	}
+	if config.esWarmAgeDay == 0 {
+		return errors.New("Elasticsearch warm age is 0.")
 	}
 	return nil
 }
@@ -85,7 +93,9 @@ var loggingConfig = LoggingConfig{
 	collectNamespaces: "",
 	storageClass:      "",
 	esStorageSizeGi:   20,
-	esIndexAgeDay:     7,
+	esDeleteAgeDay:    365,
+	esColdAgeDay:      30,
+	esWarmAgeDay:      7,
 	nodeAffinity:      true,
 	errorLogAlert:     false,
 }
@@ -229,9 +239,17 @@ func selectPackage(index int, mainText string) {
 				0, nil, func(text string) {
 					loggingConfig.esStorageSizeGi, _ = strconv.Atoi(text)
 				})
-			formPackage.AddInputField("Index age (day): ", strconv.Itoa(loggingConfig.esIndexAgeDay),
+			formPackage.AddInputField("Lifecycle warm age (day): ", strconv.Itoa(loggingConfig.esWarmAgeDay),
 				0, nil, func(text string) {
-					loggingConfig.esIndexAgeDay, _ = strconv.Atoi(text)
+					loggingConfig.esWarmAgeDay, _ = strconv.Atoi(text)
+				})
+			formPackage.AddInputField("Lifecycle cold age (day): ", strconv.Itoa(loggingConfig.esColdAgeDay),
+				0, nil, func(text string) {
+					loggingConfig.esColdAgeDay, _ = strconv.Atoi(text)
+				})
+			formPackage.AddInputField("Lifecycle delete age (day): ", strconv.Itoa(loggingConfig.esDeleteAgeDay),
+				0, nil, func(text string) {
+					loggingConfig.esDeleteAgeDay, _ = strconv.Atoi(text)
 				})
 			formPackage.AddCheckbox("Node affinity: ", loggingConfig.nodeAffinity, func(checked bool) {
 				loggingConfig.nodeAffinity = checked

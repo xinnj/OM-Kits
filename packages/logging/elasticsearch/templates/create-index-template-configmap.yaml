@@ -27,8 +27,35 @@ data:
     {
       "policy": {
         "phases": {
+          "hot": {
+            "min_age": "0ms",
+            "actions": {
+              "rollover": {
+                "max_age": "${IDO_ES_WARM_AGE}d"
+              }
+            }
+          },
+          "warm": {
+            "min_age": "${IDO_ES_WARM_AGE}d",
+            "actions": {
+              "set_priority": {
+                "priority": 50
+              },
+              "forcemerge": {
+                "max_num_segments": 1
+              }
+            }
+          },
+          "cold": {
+            "min_age": "${IDO_ES_COLD_AGE}d",
+            "actions": {
+              "set_priority": {
+                "priority": 10
+              }
+            }
+          },
           "delete": {
-            "min_age": "'"${IDO_ES_INDEX_AGE}"'",
+            "min_age": "${IDO_ES_DELETE_AGE}d",
             "actions": {
               "delete": {
                 "delete_searchable_snapshot": true

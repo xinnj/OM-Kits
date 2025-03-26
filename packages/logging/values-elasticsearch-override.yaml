@@ -181,8 +181,12 @@ sidecars:
       - name: create-index-template
         mountPath: /scripts
     env:
-      - name: IDO_ES_INDEX_AGE
-        value: ${IDO_ES_INDEX_AGE}
+      - name: IDO_ES_DELETE_AGE
+        value: ${IDO_ES_DELETE_AGE}
+      - name: IDO_ES_COLD_AGE
+        value: ${IDO_ES_COLD_AGE}
+      - name: IDO_ES_WARM_AGE
+        value: ${IDO_ES_WARM_AGE}
     command:
       - /bin/bash
       - /scripts/create-index-template.sh

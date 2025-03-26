@@ -241,7 +241,9 @@ func buildTasks() (tasks []task, envs []string) {
 		envs = append(envs, "IDO_ES_STORAGE_SIZE="+strconv.Itoa(loggingConfig.esStorageSizeGi)+"Gi")
 		envs = append(envs, "IDO_ES_STORAGE_CLASS="+loggingConfig.storageClass)
 		envs = append(envs, "IDO_ES_NODE_AFFINITY="+nodeAffinityPreset)
-		envs = append(envs, "IDO_ES_INDEX_AGE="+strconv.Itoa(loggingConfig.esIndexAgeDay)+"d")
+		envs = append(envs, "IDO_ES_WARM_AGE="+strconv.Itoa(loggingConfig.esWarmAgeDay))
+		envs = append(envs, "IDO_ES_COLD_AGE="+strconv.Itoa(loggingConfig.esColdAgeDay))
+		envs = append(envs, "IDO_ES_DELETE_AGE="+strconv.Itoa(loggingConfig.esDeleteAgeDay))
 		envs = append(envs, "IDO_FLUENT_ALERT_LOG_LEVEL="+alertLogLevel)
 	}
 
