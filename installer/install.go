@@ -102,8 +102,24 @@ func initFlexInstall() {
 	quitButton.SetDisabled(false)
 
 	flexInstall.SetDirection(tview.FlexRow).
-		AddItem(flexTop, 0, 1, true).
-		AddItem(formDown, 3, 1, false)
+		AddItem(flexTop, 0, 1, false).
+		AddItem(formDown, 3, 1, true)
+
+	app.SetFocus(formDown)
+
+	flexTop.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
+		if event.Key() == tcell.KeyCtrlN || event.Key() == tcell.KeyCtrlP {
+			app.SetFocus(formDown)
+		}
+		return event
+	})
+
+	formDown.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
+		if event.Key() == tcell.KeyCtrlN || event.Key() == tcell.KeyCtrlP {
+			app.SetFocus(flexTop)
+		}
+		return event
+	})
 
 	go startTimer(stopTimer)
 	go execTasks(tasks, envs, logContent)

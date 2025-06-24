@@ -546,7 +546,7 @@ master:
   ## Example:
   ##   heapSize: 128m
   ##
-  heapSize: 128m
+  heapSize: 1024m
   ## Configure Pods Security Context
   ## ref: https://kubernetes.io/docs/tasks/configure-pod-container/security-context/#set-the-security-context-for-a-pod
   ## @param master.podSecurityContext.enabled Enabled master-elegible pods' Security Context

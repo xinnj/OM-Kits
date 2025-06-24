@@ -1,6 +1,6 @@
 module om-kits-installer
 
-go 1.19
+go 1.20
 
 require (
 	github.com/gdamore/tcell/v2 v2.6.0
@@ -16,5 +16,5 @@ require (
 	github.com/rivo/uniseg v0.4.3 // indirect
 	golang.org/x/sys v0.13.0 // indirect
 	golang.org/x/term v0.5.0 // indirect
-	golang.org/x/text v0.7.0 // indirect
+	golang.org/x/text v0.8.0 // indirect
 )

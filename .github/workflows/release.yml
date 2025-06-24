@@ -19,7 +19,7 @@ jobs:
     - name: Build
       run: |
         cd installer
-        go build
+        CGO_ENABLED=0 go build
         mv om-kits-installer ../
 
     - name: Package

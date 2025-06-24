@@ -2,6 +2,7 @@ package main
 
 import (
 	"errors"
+	"github.com/gdamore/tcell/v2"
 	"github.com/rivo/tview"
 	"golang.org/x/exp/slices"
 	"strconv"
@@ -167,10 +168,44 @@ func initFlexPackages() {
 	flexPackages.SetDirection(tview.FlexRow).
 		AddItem(flexList, 0, 1, true).
 		AddItem(formDown, 3, 1, false)
+
+	app.SetFocus(flexList)
+	app.SetFocus(listPackages)
+
+	listPackages.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
+		if event.Key() == tcell.KeyCtrlN {
+			app.SetFocus(formPackage)
+		}
+		if event.Key() == tcell.KeyCtrlP {
+			app.SetFocus(formDown)
+		}
+		return event
+	})
+
+	formPackage.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
+		if event.Key() == tcell.KeyCtrlN {
+			app.SetFocus(formDown)
+		}
+		if event.Key() == tcell.KeyCtrlP {
+			app.SetFocus(listPackages)
+		}
+		return event
+	})
+
+	formDown.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
+		if event.Key() == tcell.KeyCtrlN {
+			app.SetFocus(listPackages)
+		}
+		if event.Key() == tcell.KeyCtrlP {
+			app.SetFocus(formPackage)
+		}
+		return event
+	})
 }
 
 func selectPackage(index int, mainText string) {
 	formPackage.Clear(true)
+	app.SetFocus(listPackages)
 	listPackages.SetItemText(index, mainText, "")
 	switch mainText {
 	case "Local-Path Provisioner":
