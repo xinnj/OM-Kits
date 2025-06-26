@@ -136,9 +136,16 @@ func initFlexBasicInfo() {
 		showQuitModal()
 	})
 
+	textView := tview.NewTextView().
+		SetTextAlign(tview.AlignLeft).
+		SetTextColor(tcell.ColorDarkRed).
+		SetText("Keyboard Usage:\nTab / Shift-Tab: move focus inside a block\nCtrl-N / Ctrl-P: move focus among blocks")
+	textView.SetBorder(false)
+
 	flexBasicInfo.SetDirection(tview.FlexRow).
 		AddItem(formBasicInfo, 0, 1, true).
-		AddItem(formDown, 3, 1, false)
+		AddItem(formDown, 3, 1, false).
+		AddItem(textView, 5, 1, false)
 
 	app.SetFocus(formBasicInfo)
 
