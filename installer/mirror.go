@@ -61,11 +61,13 @@ func initFlexMirror() {
 			if useOneMirror {
 				if oneMirror == "" {
 					showErrorModal("Mirror is empty.")
+					return
 				}
 			} else {
 				for k, v := range mirrors {
 					if v == "" {
 						showErrorModal(k + " is empty.")
+						return
 					}
 				}
 			}

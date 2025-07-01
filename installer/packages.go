@@ -2,11 +2,12 @@ package main
 
 import (
 	"errors"
+	"strconv"
+	"strings"
+
 	"github.com/gdamore/tcell/v2"
 	"github.com/rivo/tview"
 	"golang.org/x/exp/slices"
-	"strconv"
-	"strings"
 )
 
 type NfsProvisionerConfig struct {
@@ -30,6 +31,7 @@ type PrometheusConfig struct {
 	grafanaStorageSizeGi      int
 	prometheusStorageSizeGi   int
 	storageClass              string
+	grafanaRootUrl            string
 }
 
 func (config *PrometheusConfig) validate() error {
@@ -40,7 +42,13 @@ func (config *PrometheusConfig) validate() error {
 		return errors.New("Grafana storage size is 0.")
 	}
 	if config.prometheusStorageSizeGi == 0 {
-		return errors.New(" Prometheus storage size is 0.")
+		return errors.New("Prometheus storage size is 0.")
+	}
+	if config.storageClass == "" {
+		return errors.New("Prometheus storage class is empty.")
+	}
+	if config.grafanaRootUrl == "" {
+		return errors.New("Grafana root URL is empty.")
 	}
 	return nil
 }
@@ -69,6 +77,9 @@ func (config *LoggingConfig) validate() error {
 	if config.esWarmAgeDay == 0 {
 		return errors.New("Elasticsearch warm age is 0.")
 	}
+	if config.storageClass == "" {
+		return errors.New("Elasticsearch storage class is empty.")
+	}
 	return nil
 }
 
@@ -90,6 +101,7 @@ var prometheusConfig = PrometheusConfig{
 	grafanaStorageSizeGi:      5,
 	prometheusStorageSizeGi:   10,
 	storageClass:              "",
+	grafanaRootUrl:            "",
 }
 
 var loggingConfig = LoggingConfig{
@@ -132,6 +144,7 @@ func initFlexPackages() {
 		if installLocalPathProvisioner {
 			if localPathProvisionerPath == "" {
 				showErrorModal("Local-Path Provisioner path is empty.")
+				return
 			}
 		}
 
@@ -139,6 +152,7 @@ func initFlexPackages() {
 			err := nfsProvisionerConfig.validate()
 			if err != nil {
 				showErrorModal(err.Error())
+				return
 			}
 		}
 
@@ -146,6 +160,15 @@ func initFlexPackages() {
 			err := prometheusConfig.validate()
 			if err != nil {
 				showErrorModal(err.Error())
+				return
+			}
+		}
+
+		if installLogging {
+			err := loggingConfig.validate()
+			if err != nil {
+				showErrorModal(err.Error())
+				return
 			}
 		}
 
@@ -263,6 +286,14 @@ func selectPackage(index int, mainText string) {
 			formPackage.AddInputField("Prometheus storage size (Gi): ", strconv.Itoa(prometheusConfig.prometheusStorageSizeGi),
 				0, nil, func(text string) {
 					prometheusConfig.prometheusStorageSizeGi, _ = strconv.Atoi(text)
+				})
+
+			if prometheusConfig.grafanaRootUrl == "" {
+				prometheusConfig.grafanaRootUrl = "https://" + basicInfo.host + "/grafana"
+			}
+			formPackage.AddInputField("Grafana root URL: ", prometheusConfig.grafanaRootUrl,
+				0, nil, func(text string) {
+					prometheusConfig.grafanaRootUrl = text
 				})
 		}
 	case "Logging":

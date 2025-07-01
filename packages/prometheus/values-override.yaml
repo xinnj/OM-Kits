@@ -958,7 +958,7 @@ grafana:
     #   - grafana.example.com
 
   env:
-    GF_SERVER_ROOT_URL: "${IDO_CLUSTER_URL}/grafana"
+    GF_SERVER_ROOT_URL: "${IDO_GF_SERVER_ROOT_URL}"
 
   persistence:
     type: pvc

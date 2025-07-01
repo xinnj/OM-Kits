@@ -1,8 +1,6 @@
 package main
 
 import (
-	"github.com/gdamore/tcell/v2"
-	"github.com/rivo/tview"
 	"io"
 	"net"
 	"os"
@@ -11,6 +9,9 @@ import (
 	"strings"
 	"syscall"
 	"time"
+
+	"github.com/gdamore/tcell/v2"
+	"github.com/rivo/tview"
 )
 
 type task struct {
@@ -223,6 +224,7 @@ func buildTasks() (tasks []task, envs []string) {
 		envs = append(envs, "IDO_GRAFANA_STORAGE_SIZE="+strconv.Itoa(prometheusConfig.grafanaStorageSizeGi)+"Gi")
 		envs = append(envs, "IDO_PROMETHEUS_STORAGE_SIZE="+strconv.Itoa(prometheusConfig.prometheusStorageSizeGi)+"Gi")
 		envs = append(envs, "IDO_PROMETHEUS_STORAGE_CLASS="+prometheusConfig.storageClass)
+		envs = append(envs, "IDO_GF_SERVER_ROOT_URL="+prometheusConfig.grafanaRootUrl)
 	}
 
 	if installLogging {
