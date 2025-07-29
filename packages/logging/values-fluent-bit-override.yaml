@@ -465,6 +465,18 @@ config:
         Retry_Limit False
         Suppress_Type_Name On
     [OUTPUT]
+        name http
+        tls off
+        match kube.*
+        host clickhouse
+        port 8123
+        URI /?query=INSERT+INTO+logs.logs+FORMAT+JSONEachRow
+        format json_stream
+        http_user default
+        http_passwd clickhouse
+        json_date_key timestamp
+        json_date_format epoch
+    [OUTPUT]
         Name http
         Match error
         Host fluent-bit-to-alertmanager
