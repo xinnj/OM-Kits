@@ -332,8 +332,8 @@ distributeReplicasByZone: false
 ## @param exposeMysql Expose MySQL port container port
 ## @param exposePostgresql Expose PostgreSQL port container port
 ##
-exposeMysql: true
-exposePostgresql: true
+exposeMysql: false
+exposePostgresql: false
 ## @param containerPorts.http ClickHouse HTTP container port
 ## @param containerPorts.https ClickHouse HTTPS container port
 ## @param containerPorts.tcp ClickHouse TCP container port
@@ -410,7 +410,7 @@ customStartupProbe: {}
 ## @param resourcesPreset Set container resources according to one common preset (allowed values: none, nano, micro, small, medium, large, xlarge, 2xlarge). This is ignored if resources is set (resources is recommended for production).
 ## More information: https://github.com/bitnami/charts/blob/main/bitnami/common/templates/_resources.tpl#L15
 ##
-resourcesPreset: "small"
+resourcesPreset: "medium"
 ## @param resources Set container requests and limits for different resources like CPU or memory (essential for production workloads)
 ## Example:
 ## resources:
