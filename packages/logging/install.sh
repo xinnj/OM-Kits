@@ -6,16 +6,15 @@ base=$(dirname "$0")
 echo "##########################################################################"
 echo "### Install Logging ###"
 
-# Install elasticsearch
 if [ "$IDO_TLS_KEY" == "tls" ]; then
   export IDO_TLS_ENABLED=true
 else
   export IDO_TLS_ENABLED=false
 fi
 
-envsubst < "${base}/values-elasticsearch-override.yaml" > "${base}/values-elasticsearch.yaml"
-"${base}/../check-undefined-env.sh" "${base}/values-elasticsearch.yaml"
-helm upgrade elasticsearch --install --create-namespace --namespace logging --wait --timeout 30m -f "${base}"/values-elasticsearch.yaml "${base}"/elasticsearch
+envsubst < "${base}/values-clickhouse-override.yaml" > "${base}/values-clickhouse.yaml"
+"${base}/../check-undefined-env.sh" "${base}/values-clickhouse.yaml"
+helm upgrade clickhouse --install --create-namespace --namespace logging --wait --timeout 30m -f "${base}"/values-clickhouse.yaml "${base}"/clickhouse
 
 # Install fluent-bit
 envsubst '${IDO_FLUENT_LOG_PATH}, ${IDO_FLUENT_ALERT_LOG_LEVEL}, ${IDO_DOCKER_CONTAINER_MIRROR}' < "${base}/values-fluent-bit-override.yaml" > "${base}/values-fluent-bit.yaml"

@@ -56,29 +56,25 @@ func (config *PrometheusConfig) validate() error {
 type LoggingConfig struct {
 	collectNamespaces string
 	storageClass      string
-	esStorageSizeGi   int
-	esDeleteAgeDay    int
-	esColdAgeDay      int
-	esWarmAgeDay      int
+	chStorageSizeGi   int
+	chDeleteAgeDay    int
+	chColdAgeDay      int
 	nodeAffinity      bool
 	errorLogAlert     bool
 }
 
 func (config *LoggingConfig) validate() error {
-	if config.esStorageSizeGi == 0 {
-		return errors.New("Elasticsearch storage size is 0.")
+	if config.chStorageSizeGi == 0 {
+		return errors.New("Clickhouse storage size is 0.")
 	}
-	if config.esDeleteAgeDay == 0 {
-		return errors.New("Elasticsearch delete age is 0.")
+	if config.chDeleteAgeDay == 0 {
+		return errors.New("Clickhouse delete age is 0.")
 	}
-	if config.esColdAgeDay == 0 {
-		return errors.New("Elasticsearch cold age is 0.")
-	}
-	if config.esWarmAgeDay == 0 {
-		return errors.New("Elasticsearch warm age is 0.")
+	if config.chColdAgeDay == 0 {
+		return errors.New("Clickhouse cold age is 0.")
 	}
 	if config.storageClass == "" {
-		return errors.New("Elasticsearch storage class is empty.")
+		return errors.New("Clickhouse storage class is empty.")
 	}
 	return nil
 }
@@ -107,10 +103,9 @@ var prometheusConfig = PrometheusConfig{
 var loggingConfig = LoggingConfig{
 	collectNamespaces: "",
 	storageClass:      "",
-	esStorageSizeGi:   20,
-	esDeleteAgeDay:    365,
-	esColdAgeDay:      30,
-	esWarmAgeDay:      7,
+	chStorageSizeGi:   20,
+	chDeleteAgeDay:    365,
+	chColdAgeDay:      30,
 	nodeAffinity:      true,
 	errorLogAlert:     false,
 }
@@ -313,21 +308,17 @@ func selectPackage(index int, mainText string) {
 			formPackage.AddDropDown("Storage Class: ", storageClasses, initialOption, func(option string, optionIndex int) {
 				loggingConfig.storageClass = option
 			})
-			formPackage.AddInputField("Elasticsearch storage size (Gi): ", strconv.Itoa(loggingConfig.esStorageSizeGi),
+			formPackage.AddInputField("Clickhouse storage size (Gi): ", strconv.Itoa(loggingConfig.chStorageSizeGi),
 				0, nil, func(text string) {
-					loggingConfig.esStorageSizeGi, _ = strconv.Atoi(text)
+					loggingConfig.chStorageSizeGi, _ = strconv.Atoi(text)
 				})
-			formPackage.AddInputField("Lifecycle warm age (day): ", strconv.Itoa(loggingConfig.esWarmAgeDay),
+			formPackage.AddInputField("Lifecycle cold age (day): ", strconv.Itoa(loggingConfig.chColdAgeDay),
 				0, nil, func(text string) {
-					loggingConfig.esWarmAgeDay, _ = strconv.Atoi(text)
+					loggingConfig.chColdAgeDay, _ = strconv.Atoi(text)
 				})
-			formPackage.AddInputField("Lifecycle cold age (day): ", strconv.Itoa(loggingConfig.esColdAgeDay),
+			formPackage.AddInputField("Lifecycle delete age (day): ", strconv.Itoa(loggingConfig.chDeleteAgeDay),
 				0, nil, func(text string) {
-					loggingConfig.esColdAgeDay, _ = strconv.Atoi(text)
-				})
-			formPackage.AddInputField("Lifecycle delete age (day): ", strconv.Itoa(loggingConfig.esDeleteAgeDay),
-				0, nil, func(text string) {
-					loggingConfig.esDeleteAgeDay, _ = strconv.Atoi(text)
+					loggingConfig.chDeleteAgeDay, _ = strconv.Atoi(text)
 				})
 			formPackage.AddCheckbox("Node affinity: ", loggingConfig.nodeAffinity, func(checked bool) {
 				loggingConfig.nodeAffinity = checked
