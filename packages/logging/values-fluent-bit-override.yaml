@@ -440,6 +440,7 @@ config:
         remove_key stream
         remove_key _p
         remove_key original_time
+        remove_key time
     [FILTER]
         Name kubernetes
         Match kube.*
