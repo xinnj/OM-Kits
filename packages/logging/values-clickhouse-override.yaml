@@ -286,7 +286,7 @@ initdbScripts:
     
       CREATE TABLE IF NOT EXISTS logs.logs
       (
-        timestamp DateTime('Asia/Shanghai'),
+        timestamp DateTime('${IDO_TIMEZONE}'),
         namespace LowCardinality(String),
         app LowCardinality(String),
         level LowCardinality(String),
@@ -299,9 +299,9 @@ initdbScripts:
       TTL timestamp + INTERVAL ${IDO_CH_COLD_AGE} DAY RECOMPRESS CODEC(LZ4HC(10)),
           timestamp + INTERVAL ${IDO_CH_DELETE_AGE} DAY DELETE;
 
-      CREATE USER viewer
-      IDENTIFIED WITH plaintext_password BY 'viewer'
-      SETTINGS PROFILE 'readonly';
+      CREATE SETTINGS PROFILE grafana_profile SETTINGS readonly = 2;
+      
+      CREATE USER viewer NOT IDENTIFIED SETTINGS PROFILE 'grafana_profile';
       GRANT SHOW TABLES, SELECT ON logs.* TO viewer;
     "
 ## @param initdbScriptsSecret ConfigMap with the initdb scripts (Note: Overrides `initdbScripts`)
