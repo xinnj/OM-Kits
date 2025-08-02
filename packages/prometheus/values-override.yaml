@@ -1377,11 +1377,11 @@ grafana:
 
   resources:
     limits:
-      cpu: 200m
-      memory: 512Mi
+      cpu: 500m
+      memory: 1Gi
     requests:
       cpu: 100m
-      memory: 128Mi
+      memory: 256Mi
 
   serviceAccount:
     create: true
@@ -1464,8 +1464,7 @@ grafana:
   #   configMap: certs-configmap
   #   readOnly: true
 
-  plugins:
-    - grafana-clickhouse-datasource
+  plugins: []
 
   deleteDatasources: []
   # - name: example-datasource

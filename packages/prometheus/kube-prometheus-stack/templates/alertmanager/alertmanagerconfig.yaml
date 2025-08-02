@@ -4,6 +4,8 @@ metadata:
   name: global-alertmanager-configuration
   namespace: {{ template "kube-prometheus-stack.namespace" . }}
 spec:
+  global:
+    resolve_timeout: 5m
   # Inhibition rules allow to mute a set of alerts given that another alert is
   # firing.
   # We use this to mute any warning-level notifications if the same alert is
@@ -115,15 +117,15 @@ spec:
             value: 'ErrorLog'
         continue: false
         groupBy: [ 'alertname', 'namespace', 'pod', 'time' ]
-        group_wait: 10s
+        groupWait: 10s
       - receiver: 'dingtalk'
         matchers:
           - name: 'severity'
             matchType: '='
             value: 'critical'
         continue: true
-        group_wait: 10s
-        repeat_interval: 1h
+        groupWait: 10s
+        repeatInterval: 1h
       - receiver: 'email'
         matchers:
           - name: 'severity'
