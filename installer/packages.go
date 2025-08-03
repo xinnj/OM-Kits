@@ -83,10 +83,26 @@ func (config *LoggingConfig) validate() error {
 	return nil
 }
 
+type PermissionManagerConfig struct {
+	clusterName    string
+	clusterAddress string
+}
+
+func (config *PermissionManagerConfig) validate() error {
+	if config.clusterName == "" {
+		return errors.New("Cluster name is empty.")
+	}
+	if config.clusterAddress == "" {
+		return errors.New("Cluster address is empty.")
+	}
+	return nil
+}
+
 var installLocalPathProvisioner = false
 var installNfsProvisioner = false
 var installPrometheus = false
 var installLogging = false
+var installPermissionManager = false
 
 var localPathProvisionerPath = "/data/local-path-provisioner"
 
@@ -115,8 +131,13 @@ var loggingConfig = LoggingConfig{
 	errorLogAlert:     false,
 }
 
+var permissionManagerConfig = PermissionManagerConfig{
+	clusterName:    "cluster.local",
+	clusterAddress: "https://lb-apiserver.kubernetes.local:6443",
+}
+
 var storageClasses []string
-var packages = []string{"Local-Path Provisioner", "NFS Provisioner", "Prometheus", "Logging"}
+var packages = []string{"Local-Path Provisioner", "NFS Provisioner", "Prometheus", "Logging", "Permission Manager"}
 var listPackages = tview.NewList()
 var formPackage = tview.NewForm()
 
@@ -335,6 +356,23 @@ func selectPackage(index int, mainText string) {
 			formPackage.AddCheckbox("Send alert when ERROR level log detected: ", loggingConfig.errorLogAlert, func(checked bool) {
 				loggingConfig.errorLogAlert = checked
 			})
+		}
+	case "Permission Manager":
+		formPackage.AddCheckbox("Install Permission Manager: ", installPermissionManager, func(checked bool) {
+			installPermissionManager = checked
+			selectPackage(index, mainText)
+		})
+		if installPermissionManager {
+			listPackages.SetItemText(index, mainText, "Will install")
+
+			formPackage.AddInputField("Cluster name: ", permissionManagerConfig.clusterName,
+				0, nil, func(text string) {
+					permissionManagerConfig.clusterName = text
+				})
+			formPackage.AddInputField("Cluster address: ", permissionManagerConfig.clusterAddress,
+				0, nil, func(text string) {
+					permissionManagerConfig.clusterAddress = text
+				})
 		}
 	}
 }

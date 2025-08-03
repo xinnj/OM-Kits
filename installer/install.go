@@ -266,6 +266,13 @@ func buildTasks() (tasks []task, envs []string) {
 		envs = append(envs, "IDO_FLUENT_ALERT_LOG_LEVEL="+alertLogLevel)
 	}
 
+	if installPermissionManager {
+		tasks = append(tasks, task{name: "Install Permission Manager",
+			command: "chmod +x packages/permission-manager/install.sh; packages/permission-manager/install.sh"})
+		envs = append(envs, "IDO_PERMISSION_MANAGER_CLUSTER_NAME="+permissionManagerConfig.clusterName)
+		envs = append(envs, "IDO_PERMISSION_MANAGER_CLUSTER_ADDRESS="+permissionManagerConfig.clusterAddress)
+	}
+
 	tasks = append(tasks, task{name: "Final Check",
 		command: "chmod +x packages/final-check.sh; packages/final-check.sh"})
 
