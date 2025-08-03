@@ -16,18 +16,31 @@ jobs:
       with:
         go-version: '1.20'
 
-    - name: Build
+    - name: Build Linux
       run: |
         cd installer
-        CGO_ENABLED=0 go build
+        GOOS=linux GOARCH=amd64 CGO_ENABLED=0 go build
         mv om-kits-installer ../
 
-    - name: Package
+    - name: Package Linux
       run: |
         chmod +x om-kits-installer packages/*.sh
-        tar czf om-kits-installer-${{ github.ref_name }}.tgz --transform 's,^,om-kits-installer-${{ github.ref_name }}/,' packages images om-kits-installer LICENSE README.md
+        tar czf om-kits-installer-${{ github.ref_name }}-linux-amd64.tgz --transform 's,^,om-kits-installer-${{ github.ref_name }}/,' packages images om-kits-installer LICENSE README.md
+
+    - name: Build macOS
+      run: |
+        cd installer
+        GOOS=darwin GOARCH=amd64 CGO_ENABLED=0 go build
+        mv om-kits-installer ../
+
+    - name: Package macOS
+      run: |
+        chmod +x om-kits-installer packages/*.sh
+        tar czf om-kits-installer-${{ github.ref_name }}-macos-amd64.tgz --transform 's,^,om-kits-installer-${{ github.ref_name }}/,' packages images om-kits-installer LICENSE README.md
 
     - name: Release
       uses: softprops/action-gh-release@v1
       with:
-        files: om-kits-installer-${{ github.ref_name }}.tgz
+        files: |
+          om-kits-installer-${{ github.ref_name }}-linux-amd64.tgz
+          om-kits-installer-${{ github.ref_name }}-macos-amd64.tgz
