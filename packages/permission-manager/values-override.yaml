@@ -133,3 +133,31 @@ config:
             - "poddisruptionbudgets"
           verbs:
             - "*"
+    - name: developer-readonly
+      rules:
+        - apiGroups:
+            - "*"
+          resources:
+            - "configmaps"
+            - "endpoints"
+            - "persistentvolumeclaims"
+            - "pods"
+            - "pods/log"
+            - "pods/portforward"
+            - "podtemplates"
+            - "replicationcontrollers"
+            - "resourcequotas"
+            - "secrets"
+            - "services"
+            - "events"
+            - "daemonsets"
+            - "deployments"
+            - "replicasets"
+            - "ingresses"
+            - "networkpolicies"
+            - "poddisruptionbudgets"
+          verbs:
+            - "read"
+            - "get"
+            - "list"
+            - "watch"
