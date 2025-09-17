@@ -537,7 +537,7 @@ master:
   ## @param master.resourcesPreset Set container resources according to one common preset (allowed values: none, nano, micro, small, medium, large, xlarge, 2xlarge). This is ignored if master.resources is set (master.resources is recommended for production).
   ## More information: https://github.com/bitnami/charts/blob/main/bitnami/common/templates/_resources.tpl#L15
   ##
-  resourcesPreset: "medium"
+  resourcesPreset: "${IDO_ES_RESOURCES_PRESET}"
   ## @param master.resources Set container requests and limits for different resources like CPU or memory (essential for production workloads)
   ## Example:
   ## resources:
@@ -2224,7 +2224,7 @@ ingest:
 metrics:
   ## @param metrics.enabled Enable prometheus exporter
   ##
-  enabled: false
+  enabled: ${IDO_LOGGING_MONITORING}
   ## @param metrics.nameOverride Metrics pod name
   ##
   nameOverride: ""
@@ -2589,7 +2589,7 @@ metrics:
   serviceMonitor:
     ## @param metrics.serviceMonitor.enabled Create ServiceMonitor Resource for scraping metrics using PrometheusOperator
     ##
-    enabled: false
+    enabled: ${IDO_LOGGING_MONITORING}
     ## @param metrics.serviceMonitor.namespace Namespace which Prometheus is running in
     ## e.g:
     ## namespace: monitoring
@@ -2632,13 +2632,14 @@ metrics:
   prometheusRule:
     ## @param metrics.prometheusRule.enabled Creates a Prometheus Operator PrometheusRule (also requires `metrics.enabled` to be `true` and `metrics.prometheusRule.rules`)
     ##
-    enabled: false
+    enabled: ${IDO_LOGGING_MONITORING}
     ## @param metrics.prometheusRule.namespace Namespace for the PrometheusRule Resource (defaults to the Release Namespace)
     ##
-    namespace: ""
+    namespace: "monitoring"
     ## @param metrics.prometheusRule.additionalLabels Additional labels that can be used so PrometheusRule will be discovered by Prometheus
     ##
-    additionalLabels: {}
+    additionalLabels:
+        release: prometheus
     ## @param metrics.prometheusRule.rules Prometheus Rule definitions
     # - alert: es cluster error
     #   annotations:
@@ -2650,7 +2651,16 @@ metrics:
     #     severity: critical
     #     group: PaaS
     ##
-    rules: []
+    rules:
+    - alert: es cluster error
+      annotations:
+        summary: "es cluster error"
+        description: "es cluster error, cluster state {{`{{`}} $labels.color {{`}}`}}"
+      expr: elasticsearch_cluster_health_status{color="red"} ==1 or elasticsearch_cluster_health_status{color="yellow"} ==1
+      for: 1m
+      labels:
+        severity: critical
+        group: PaaS
 ## @section Init Container Parameters
 
 ## 'volumePermissions' init container parameters

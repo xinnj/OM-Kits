@@ -62,6 +62,8 @@ type LoggingConfig struct {
 	esWarmAgeDay      int
 	nodeAffinity      bool
 	errorLogAlert     bool
+	enableMonitoring  bool
+	resourcesPreset   string
 }
 
 func (config *LoggingConfig) validate() error {
@@ -79,6 +81,9 @@ func (config *LoggingConfig) validate() error {
 	}
 	if config.storageClass == "" {
 		return errors.New("Elasticsearch storage class is empty.")
+	}
+	if config.resourcesPreset == "" {
+		return errors.New("Elasticsearch resources preset is empty.")
 	}
 	return nil
 }
@@ -129,6 +134,8 @@ var loggingConfig = LoggingConfig{
 	esWarmAgeDay:      7,
 	nodeAffinity:      true,
 	errorLogAlert:     false,
+	enableMonitoring:  false,
+	resourcesPreset:   "",
 }
 
 var permissionManagerConfig = PermissionManagerConfig{
@@ -355,6 +362,15 @@ func selectPackage(index int, mainText string) {
 			})
 			formPackage.AddCheckbox("Send alert when ERROR level log detected: ", loggingConfig.errorLogAlert, func(checked bool) {
 				loggingConfig.errorLogAlert = checked
+			})
+			formPackage.AddCheckbox("Enable monitoring: ", loggingConfig.enableMonitoring, func(checked bool) {
+				loggingConfig.enableMonitoring = checked
+			})
+
+			resourcesPresets := []string{"nano", "micro", "small", "medium", "large", "xlarge", "2xlarge"}
+			initialOption = slices.Index(resourcesPresets, "medium")
+			formPackage.AddDropDown("Resources preset: ", resourcesPresets, initialOption, func(option string, optionIndex int) {
+				loggingConfig.resourcesPreset = option
 			})
 		}
 	case "Permission Manager":

@@ -264,6 +264,8 @@ func buildTasks() (tasks []task, envs []string) {
 		envs = append(envs, "IDO_ES_COLD_AGE="+strconv.Itoa(loggingConfig.esColdAgeDay))
 		envs = append(envs, "IDO_ES_DELETE_AGE="+strconv.Itoa(loggingConfig.esDeleteAgeDay))
 		envs = append(envs, "IDO_FLUENT_ALERT_LOG_LEVEL="+alertLogLevel)
+		envs = append(envs, "IDO_LOGGING_MONITORING="+strconv.FormatBool(loggingConfig.enableMonitoring))
+		envs = append(envs, "IDO_ES_RESOURCES_PRESET="+loggingConfig.resourcesPreset)
 	}
 
 	if installPermissionManager {

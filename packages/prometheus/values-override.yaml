@@ -529,8 +529,6 @@ alertmanager:
           - 'severity = info'
         equal:
           - 'namespace'
-      - target_matchers:
-          - 'alertname = InfoInhibitor'
     route:
       group_by: ['namespace']
       group_wait: 30s
@@ -540,7 +538,7 @@ alertmanager:
       routes:
       - receiver: 'null'
         matchers:
-          - alertname = "Watchdog"
+          - alertname =~ "InfoInhibitor|Watchdog"
     receivers:
     - name: 'null'
     templates:
@@ -2551,7 +2549,11 @@ kube-state-metrics:
       ## MetricRelabelConfigs to apply to samples after scraping, but before ingestion.
       ## ref: https://github.com/prometheus-operator/prometheus-operator/blob/main/Documentation/api-reference/api.md#relabelconfig
       ##
-      metricRelabelings: []
+      metricRelabelings:
+        # Drop kube_endpoint_ports metric from etcd-metrics endpoint to prevent PrometheusDuplicateTimestamps alert
+        - sourceLabels: [ __name__, endpoint ]
+          action: drop
+          regex: 'kube_endpoint_ports;etcd-metrics'
       # - action: keep
       #   regex: 'kube_(daemonset|deployment|pod|namespace|node|statefulset).+'
       #   sourceLabels: [__name__]

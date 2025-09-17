@@ -18,7 +18,7 @@ envsubst < "${base}/values-elasticsearch-override.yaml" > "${base}/values-elasti
 helm upgrade elasticsearch --install --create-namespace --namespace logging --wait --timeout 30m -f "${base}"/values-elasticsearch.yaml "${base}"/elasticsearch
 
 # Install fluent-bit
-envsubst '${IDO_FLUENT_LOG_PATH}, ${IDO_FLUENT_ALERT_LOG_LEVEL}, ${IDO_DOCKER_CONTAINER_MIRROR}' < "${base}/values-fluent-bit-override.yaml" > "${base}/values-fluent-bit.yaml"
+envsubst '${IDO_FLUENT_LOG_PATH}, ${IDO_FLUENT_ALERT_LOG_LEVEL}, ${IDO_DOCKER_CONTAINER_MIRROR}, ${IDO_LOGGING_MONITORING}' < "${base}/values-fluent-bit-override.yaml" > "${base}/values-fluent-bit.yaml"
 "${base}/../check-undefined-env.sh" "${base}/values-fluent-bit.yaml"
 helm upgrade fluent-bit --install --create-namespace --namespace logging --timeout 30m -f "${base}"/values-fluent-bit.yaml "${base}"/fluent-bit
 

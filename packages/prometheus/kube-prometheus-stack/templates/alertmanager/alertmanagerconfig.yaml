@@ -121,8 +121,8 @@ spec:
       - receiver: 'dingtalk'
         matchers:
           - name: 'severity'
-            matchType: '='
-            value: 'critical'
+            matchType: '=~'
+            value: 'critical|warning|info'
         continue: true
         groupWait: 10s
         repeatInterval: 1h
