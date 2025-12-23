@@ -386,10 +386,18 @@ luaScripts:
         record.kubernetes.namespace_name = nil
       end
   
-      if type(record.kubernetes.labels) == "table" and record.kubernetes.labels['app.kubernetes.io/name'] ~= nil then
-        record.app = record.kubernetes.labels['app.kubernetes.io/name']
-      elseif record.kubernetes.pod_name ~= nil then
-        record.app = record.kubernetes.pod_name
+      if record.kubernetes.labels ~= nil and type(record.kubernetes.labels) == "table" then
+        if record.kubernetes.labels.app ~= nil and type(record.kubernetes.labels.app) == "string" then
+          record.app = record.kubernetes.labels.app
+          record.kubernetes.labels.app = nil
+        else
+          if record.kubernetes.labels['app.kubernetes.io/name'] ~= nil then
+            record.app = record.kubernetes.labels['app.kubernetes.io/name']
+            record.kubernetes.labels['app.kubernetes.io/name'] = nil
+          elseif record.kubernetes.container_name ~= nil then
+            record.app = record.kubernetes.container_name
+          end
+        end
       end
   
       return 2, timestamp, record
