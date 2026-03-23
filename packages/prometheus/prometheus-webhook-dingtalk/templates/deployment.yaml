@@ -31,7 +31,7 @@ spec:
       volumes:
         - name: config
           configMap:
-            name: {{ include "prometheus-webhook-dingtalk.fullname" . }}
+            name: prometheus-webhook-dingtalk
       containers:
         - name: {{ .Chart.Name }}
           securityContext:

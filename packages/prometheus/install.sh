@@ -6,10 +6,18 @@ base=$(dirname "$0")
 echo "##########################################################################"
 echo "### Install Prometheus Stack ###"
 
+# Create namespaces
+kubectl create ns monitoring --dry-run=client -o yaml | kubectl apply -f -
+
 # Install prometheus
 envsubst < "${base}/values-override.yaml" > "${base}/values.yaml"
 "${base}/../check-undefined-env.sh" "${base}/values.yaml"
 helm upgrade prometheus --install --create-namespace --namespace monitoring --timeout 30m -f "${base}"/values.yaml "${base}"/kube-prometheus-stack
+
+# Create dingtalk configmap
+if ! kubectl get configmap "prometheus-webhook-dingtalk" -n monitoring &> /dev/null; then
+  kubectl apply -f "${base}/dingtalk-configmap.yaml"
+fi
 
 # Install dingtalk webhook
 envsubst < "${base}/values-override-dingtalk.yaml" > "${base}/values-dingtalk.yaml"
