@@ -378,6 +378,19 @@ prometheus-windows-exporter:
     collectors:
       enabled: '[defaults],memory,container'
 
+## Alertmanager webhook adapter channel enablement.
+## Consumed by the AlertmanagerConfig CR template and install.sh.
+## Keep these UNQUOTED: envsubst emits YAML booleans. Quoting produces the
+## string "false", which is truthy in Helm templates unless normalized.
+webhookAdapter:
+  lang: ${IDO_ALERTING_LANG}
+  dingtalk:
+    enabled: ${IDO_DINGTALK_ENABLED}
+  feishu:
+    enabled: ${IDO_FEISHU_ENABLED}
+  wechat:
+    enabled: ${IDO_WECHAT_ENABLED}
+
 ## Configuration for alertmanager
 ## ref: https://prometheus.io/docs/alerting/alertmanager/
 ##

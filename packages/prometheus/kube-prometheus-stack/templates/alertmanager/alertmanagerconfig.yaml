@@ -1,3 +1,54 @@
+{{- $adapter := .Values.webhookAdapter | default (dict) }}
+{{- $dingtalk := $adapter.dingtalk | default (dict) }}
+{{- $feishu := $adapter.feishu | default (dict) }}
+{{- $wechat := $adapter.wechat | default (dict) }}
+{{- $dingtalkEnabled := eq (toString (default false $dingtalk.enabled)) "true" }}
+{{- $feishuEnabled := eq (toString (default false $feishu.enabled)) "true" }}
+{{- $wechatEnabled := eq (toString (default false $wechat.enabled)) "true" }}
+{{- $anyChannelEnabled := or $dingtalkEnabled $feishuEnabled $wechatEnabled }}
+{{- $lang := toString ($adapter.lang | default "zh") }}
+{{- /* Chinese email templates. Alertmanager renders these itself; en keeps the
+       built-in English templates by leaving subject/html unset. */}}
+{{- $emailSubjectZH := `[{{ if .Alerts.Firing }}告警中:{{ len .Alerts.Firing }}{{ else }}已恢复{{ end }}] {{ .CommonLabels.alertname }}` }}
+{{- $emailTextZH := `{{ if .Alerts.Firing }}触发中告警{{ else }}已恢复告警{{ end }}（{{ len .Alerts }}）
+{{ range .Alerts }}
+- {{ .Labels.alertname }} [{{ .Labels.severity }}] 实例: {{ .Labels.instance }} 状态: {{ .Status }}
+  开始: {{ .StartsAt.Format "2006-01-02 15:04:05" }}
+  描述: {{ .Annotations.description }}
+{{ end }}{{ if .ExternalURL }}
+查看 Alertmanager: {{ .ExternalURL }}{{ end }}
+` }}
+{{- $emailHTMLZH := `<!DOCTYPE html>
+<html>
+<body style="font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Microsoft YaHei', sans-serif; color: #333;">
+  <h2 style="margin: 0 0 12px;">{{ if .Alerts.Firing }}🚨 触发中告警{{ else }}✅ 已恢复告警{{ end }}（{{ len .Alerts }}）</h2>
+  <table cellpadding="6" cellspacing="0" style="border-collapse: collapse; font-size: 14px;">
+    <thead>
+      <tr style="background: #f5f5f5; text-align: left;">
+        <th>告警名称</th>
+        <th>级别</th>
+        <th>实例</th>
+        <th>状态</th>
+        <th>开始时间</th>
+        <th>描述</th>
+      </tr>
+    </thead>
+    <tbody>
+      {{ range .Alerts }}
+      <tr style="border-top: 1px solid #eee;">
+        <td>{{ .Labels.alertname }}</td>
+        <td>{{ .Labels.severity }}</td>
+        <td>{{ .Labels.instance }}</td>
+        <td>{{ .Status }}</td>
+        <td>{{ .StartsAt.Format "2006-01-02 15:04:05" }}</td>
+        <td>{{ .Annotations.description }}</td>
+      </tr>
+      {{ end }}
+    </tbody>
+  </table>
+  {{ if .ExternalURL }}<p style="font-size: 13px;"><a href="{{ .ExternalURL }}">查看 Alertmanager</a></p>{{ end }}
+</body>
+</html>` }}
 apiVersion: monitoring.coreos.com/v1alpha1
 kind: AlertmanagerConfig
 metadata:
@@ -57,24 +108,42 @@ spec:
             key: 'authPassword'
           from: 'alertmanager@example.org'
           to: 'xxx@example.org'
+          {{- if eq $lang "zh" }}
+          headers:
+            Subject: {{ $emailSubjectZH | toJson }}
+          text: |
+{{ $emailTextZH | indent 12 }}
+          html: |
+{{ $emailHTMLZH | indent 12 }}
+          {{- end }}
+    {{- if $dingtalkEnabled }}
     - name: 'dingtalk'
       webhookConfigs:
         - sendResolved: true
-          url: 'http://prometheus-webhook-dingtalk/dingtalk/webhook/send'
+          url: 'http://alertmanager-webhook-adapter.monitoring.svc:80/webhook/send?channel_type=dingtalk&msg_type=markdown'
           maxAlerts: 0
+    {{- end }}
+    {{- if $anyChannelEnabled }}
     - name: 'log'
       webhookConfigs:
         - sendResolved: false
-          url: 'http://prometheus-webhook-dingtalk/dingtalk/webhook/send'
+          url: 'http://alertmanager-webhook-adapter.monitoring.svc:80/webhook/send?channel_type={{ if $dingtalkEnabled }}dingtalk{{ else if $feishuEnabled }}feishu{{ else }}weixin{{ end }}&msg_type=markdown'
           maxAlerts: 0
-    - name: 'wechat'
-      wechatConfigs:
+    {{- end }}
+    {{- if $feishuEnabled }}
+    - name: 'feishu'
+      webhookConfigs:
         - sendResolved: true
-          apiURL: 'https://qyapi.weixin.qq.com/cgi-bin/'
-          apiSecret:
-            name: 'wechat-api-secret'
-            key: 'apiSecret'
-          corpID: 'xxx'
+          url: 'http://alertmanager-webhook-adapter.monitoring.svc:80/webhook/send?channel_type=feishu&msg_type=markdown'
+          maxAlerts: 0
+    {{- end }}
+    {{- if $wechatEnabled }}
+    - name: 'wechat'
+      webhookConfigs:
+        - sendResolved: true
+          url: 'http://alertmanager-webhook-adapter.monitoring.svc:80/webhook/send?channel_type=weixin&msg_type=markdown'
+          maxAlerts: 0
+    {{- end }}
   route:
     # A default receiver
     receiver: 'null'
@@ -110,6 +179,7 @@ spec:
           - name: 'alertname'
             matchType: '=~'
             value: 'InfoInhibitor|Watchdog'
+      {{- if $anyChannelEnabled }}
       - receiver: 'log'
         matchers:
           - name: 'alertname'
@@ -118,6 +188,8 @@ spec:
         continue: false
         groupBy: [ 'alertname', 'namespace', 'pod', 'time' ]
         groupWait: 10s
+      {{- end }}
+      {{- if $dingtalkEnabled }}
       - receiver: 'dingtalk'
         matchers:
           - name: 'severity'
@@ -126,6 +198,27 @@ spec:
         continue: true
         groupWait: 10s
         repeatInterval: 1h
+      {{- end }}
+      {{- if $feishuEnabled }}
+      - receiver: 'feishu'
+        matchers:
+          - name: 'severity'
+            matchType: '=~'
+            value: 'critical|warning|info'
+        continue: true
+        groupWait: 10s
+        repeatInterval: 1h
+      {{- end }}
+      {{- if $wechatEnabled }}
+      - receiver: 'wechat'
+        matchers:
+          - name: 'severity'
+            matchType: '=~'
+            value: 'critical|warning|info'
+        continue: true
+        groupWait: 10s
+        repeatInterval: 1h
+      {{- end }}
       - receiver: 'email'
         matchers:
           - name: 'severity'
@@ -143,14 +236,3 @@ metadata:
 data:
   # echo <password> | base64 -
   authPassword: cGFzc3dvcmQK
-
----
-apiVersion: v1
-kind: Secret
-type: Opaque
-metadata:
-  name: wechat-api-secret
-  namespace: {{ template "kube-prometheus-stack.namespace" . }}
-data:
-  # echo <apiSecret> | base64 -
-  apiSecret: YXBpU2VjcmV0Cg==

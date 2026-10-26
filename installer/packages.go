@@ -32,6 +32,16 @@ type PrometheusConfig struct {
 	prometheusStorageSizeGi   int
 	storageClass              string
 	grafanaRootUrl            string
+	adapterLang               string
+	adapterSignature          string
+	dingTalkEnabled           bool
+	dingTalkToken             string
+	dingTalkSecret            string
+	feishuEnabled             bool
+	feishuToken               string
+	feishuSecret              string
+	weChatEnabled             bool
+	weChatToken               string
 }
 
 func (config *PrometheusConfig) validate() error {
@@ -50,6 +60,55 @@ func (config *PrometheusConfig) validate() error {
 	if config.grafanaRootUrl == "" {
 		return errors.New("Grafana root URL is empty.")
 	}
+
+	switch config.adapterLang {
+	case "zh", "en":
+	default:
+		config.adapterLang = "zh"
+	}
+
+	config.adapterSignature = strings.TrimSpace(config.adapterSignature)
+	if config.adapterSignature == "" {
+		config.adapterSignature = "monitoring"
+	}
+
+	config.dingTalkToken = strings.TrimSpace(config.dingTalkToken)
+	config.dingTalkSecret = strings.TrimSpace(config.dingTalkSecret)
+	config.feishuToken = strings.TrimSpace(config.feishuToken)
+	config.feishuSecret = strings.TrimSpace(config.feishuSecret)
+	config.weChatToken = strings.TrimSpace(config.weChatToken)
+
+	if config.dingTalkEnabled {
+		if config.dingTalkToken == "" {
+			return errors.New("DingTalk bot token is required when DingTalk notifications are enabled.")
+		}
+		if config.dingTalkSecret == "" {
+			return errors.New("DingTalk bot secret is required when DingTalk notifications are enabled.")
+		}
+		if strings.Contains(config.dingTalkToken, "://") {
+			return errors.New("DingTalk bot token must be the access_token value, not the full webhook URL.")
+		}
+	}
+	if config.feishuEnabled {
+		if config.feishuToken == "" {
+			return errors.New("Feishu bot token is required when Feishu notifications are enabled.")
+		}
+		if config.feishuSecret == "" {
+			return errors.New("Feishu bot secret is required when Feishu notifications are enabled.")
+		}
+		if strings.Contains(config.feishuToken, "://") {
+			return errors.New("Feishu bot token must be the webhook path token, not the full webhook URL.")
+		}
+	}
+	if config.weChatEnabled {
+		if config.weChatToken == "" {
+			return errors.New("WeChat bot key is required when WeChat notifications are enabled.")
+		}
+		if strings.Contains(config.weChatToken, "://") {
+			return errors.New("WeChat bot key must be the webhook key value, not the full webhook URL.")
+		}
+	}
+
 	return nil
 }
 
@@ -123,6 +182,11 @@ var prometheusConfig = PrometheusConfig{
 	prometheusStorageSizeGi:   10,
 	storageClass:              "",
 	grafanaRootUrl:            "",
+	adapterLang:               "zh",
+	adapterSignature:          "monitoring",
+	dingTalkEnabled:           false,
+	feishuEnabled:             false,
+	weChatEnabled:             false,
 }
 
 var loggingConfig = LoggingConfig{
@@ -147,8 +211,14 @@ var storageClasses []string
 var packages = []string{"Local-Path Provisioner", "NFS Provisioner", "Prometheus", "Logging", "Permission Manager"}
 var listPackages = tview.NewList()
 var formPackage = tview.NewForm()
+var adapterStateLoaded bool
 
 func initFlexPackages() {
+	if !adapterStateLoaded {
+		adapterStateLoaded = true
+		restoreAdapterState()
+	}
+
 	storageClasses = getStorageClasses()
 	flexPackages.Clear()
 	flexList := tview.NewFlex()
@@ -254,6 +324,49 @@ func initFlexPackages() {
 	})
 }
 
+// restoreAdapterState repopulates the Packages form from the installed adapter.
+// OM-Kits has no packages-env ConfigMap, so without this a re-run with
+// Prometheus selected would silently disable alerting and uninstall the adapter.
+func restoreAdapterState() {
+	output, err := execCommand(
+		`kubectl -n monitoring get secret alertmanager-webhook-adapter -o go-template='{{range $k, $v := .data}}{{$k}}={{$v | base64decode}}{{"\n"}}{{end}}' 2>/dev/null`, 0)
+	if err == nil {
+		creds := make(map[string]string)
+		for _, line := range strings.Split(strings.TrimRight(string(output), "\n"), "\n") {
+			if key, value, ok := strings.Cut(line, "="); ok {
+				creds[key] = value
+			}
+		}
+		prometheusConfig.dingTalkToken = creds["DINGTALK_TOKEN"]
+		prometheusConfig.dingTalkSecret = creds["DINGTALK_SECRET"]
+		prometheusConfig.dingTalkEnabled = creds["DINGTALK_TOKEN"] != "" && creds["DINGTALK_SECRET"] != ""
+		prometheusConfig.feishuToken = creds["FEISHU_TOKEN"]
+		prometheusConfig.feishuSecret = creds["FEISHU_SECRET"]
+		prometheusConfig.feishuEnabled = creds["FEISHU_TOKEN"] != "" && creds["FEISHU_SECRET"] != ""
+		prometheusConfig.weChatToken = creds["WEIXIN_TOKEN"]
+		prometheusConfig.weChatEnabled = creds["WEIXIN_TOKEN"] != ""
+	}
+
+	output, err = execCommand(
+		`kubectl -n monitoring get deployment alertmanager-webhook-adapter -o go-template='{{range .spec.template.spec.containers}}{{range .args}}{{println .}}{{end}}{{end}}' 2>/dev/null`, 0)
+	if err != nil {
+		return
+	}
+	for _, line := range strings.Split(string(output), "\n") {
+		line = strings.TrimSpace(line)
+		switch {
+		case strings.HasPrefix(line, "--signature="):
+			if signature := strings.TrimPrefix(line, "--signature="); signature != "" {
+				prometheusConfig.adapterSignature = signature
+			}
+		case strings.HasPrefix(line, "--tmpl-lang="):
+			if lang := strings.TrimPrefix(line, "--tmpl-lang="); lang == "zh" || lang == "en" {
+				prometheusConfig.adapterLang = lang
+			}
+		}
+	}
+}
+
 func selectPackage(index int, mainText string) {
 	formPackage.Clear(true)
 	app.SetFocus(listPackages)
@@ -323,6 +436,58 @@ func selectPackage(index int, mainText string) {
 				0, nil, func(text string) {
 					prometheusConfig.grafanaRootUrl = text
 				})
+
+			adapterLangOptions := []string{"zh", "en"}
+			adapterLangIndex := slices.Index(adapterLangOptions, prometheusConfig.adapterLang)
+			if adapterLangIndex < 0 {
+				adapterLangIndex = 0
+			}
+			formPackage.AddDropDown("Alert message language: ", adapterLangOptions, adapterLangIndex,
+				func(option string, optionIndex int) {
+					prometheusConfig.adapterLang = option
+				})
+			formPackage.AddInputField("Alert signature: ", prometheusConfig.adapterSignature, 0, nil,
+				func(text string) {
+					prometheusConfig.adapterSignature = text
+				})
+			formPackage.AddCheckbox("Enable DingTalk notifications: ", prometheusConfig.dingTalkEnabled, func(checked bool) {
+				prometheusConfig.dingTalkEnabled = checked
+				selectPackage(index, mainText)
+			})
+			if prometheusConfig.dingTalkEnabled {
+				formPackage.AddInputField("  DingTalk bot token: ", prometheusConfig.dingTalkToken, 0, nil,
+					func(text string) {
+						prometheusConfig.dingTalkToken = text
+					})
+				formPackage.AddInputField("  DingTalk bot secret: ", prometheusConfig.dingTalkSecret, 0, nil,
+					func(text string) {
+						prometheusConfig.dingTalkSecret = text
+					})
+			}
+			formPackage.AddCheckbox("Enable Feishu notifications: ", prometheusConfig.feishuEnabled, func(checked bool) {
+				prometheusConfig.feishuEnabled = checked
+				selectPackage(index, mainText)
+			})
+			if prometheusConfig.feishuEnabled {
+				formPackage.AddInputField("  Feishu bot token: ", prometheusConfig.feishuToken, 0, nil,
+					func(text string) {
+						prometheusConfig.feishuToken = text
+					})
+				formPackage.AddInputField("  Feishu bot secret: ", prometheusConfig.feishuSecret, 0, nil,
+					func(text string) {
+						prometheusConfig.feishuSecret = text
+					})
+			}
+			formPackage.AddCheckbox("Enable WeChat (WeCom) notifications: ", prometheusConfig.weChatEnabled, func(checked bool) {
+				prometheusConfig.weChatEnabled = checked
+				selectPackage(index, mainText)
+			})
+			if prometheusConfig.weChatEnabled {
+				formPackage.AddInputField("  WeChat bot key: ", prometheusConfig.weChatToken, 0, nil,
+					func(text string) {
+						prometheusConfig.weChatToken = text
+					})
+			}
 		}
 	case "Logging":
 		formPackage.AddCheckbox("Install Logging: ", installLogging, func(checked bool) {
