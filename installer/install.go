@@ -162,32 +162,7 @@ func buildTasks() (tasks []task, envs []string) {
 	}
 	envs = append(envs, "IDO_FORCE_SSL_REDIRECT="+strconv.FormatBool(basicInfo.tlsCert.forceSslRedirect))
 
-	var finalMirrors map[string]string
-	if enableMirror {
-		if useOneMirror {
-			finalMirrors = map[string]string{
-				"IDO_DOCKER_CONTAINER_MIRROR": oneMirror,
-				"IDO_QUAY_CONTAINER_MIRROR":   oneMirror,
-				"IDO_K8S_CONTAINER_MIRROR":    oneMirror,
-				"IDO_GCR_CONTAINER_MIRROR":    oneMirror,
-			}
-		} else {
-			finalMirrors = map[string]string{
-				"IDO_DOCKER_CONTAINER_MIRROR": mirrors["DOCKER_CONTAINER_MIRROR"],
-				"IDO_QUAY_CONTAINER_MIRROR":   mirrors["QUAY_CONTAINER_MIRROR"],
-				"IDO_K8S_CONTAINER_MIRROR":    mirrors["K8S_CONTAINER_MIRROR"],
-				"IDO_GCR_CONTAINER_MIRROR":    mirrors["GCR_CONTAINER_MIRROR"],
-			}
-		}
-	} else {
-		finalMirrors = map[string]string{
-			"IDO_DOCKER_CONTAINER_MIRROR": "docker.io",
-			"IDO_QUAY_CONTAINER_MIRROR":   "quay.io",
-			"IDO_K8S_CONTAINER_MIRROR":    "registry.k8s.io",
-			"IDO_GCR_CONTAINER_MIRROR":    "k8s-gcr.io",
-		}
-	}
-	for k, v := range finalMirrors {
+	for k, v := range mirrorEnvVars(enableMirror, useOneMirror, oneMirror, mirrors) {
 		envs = append(envs, k+"="+v)
 	}
 
