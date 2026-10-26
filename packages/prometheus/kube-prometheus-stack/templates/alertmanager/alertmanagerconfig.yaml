@@ -55,8 +55,8 @@ metadata:
   name: global-alertmanager-configuration
   namespace: {{ template "kube-prometheus-stack.namespace" . }}
 spec:
-  global:
-    resolve_timeout: 5m
+  # The AlertmanagerConfig CRD has no spec.global; the global config
+  # (resolve_timeout etc.) lives on the Alertmanager CR instead.
   # Inhibition rules allow to mute a set of alerts given that another alert is
   # firing.
   # We use this to mute any warning-level notifications if the same alert is
@@ -110,7 +110,10 @@ spec:
           to: 'xxx@example.org'
           {{- if eq $lang "zh" }}
           headers:
-            Subject: {{ $emailSubjectZH | toJson }}
+            # The CRD models headers as a list of {key, value}; a map fails
+            # server-side apply (default in Helm 4).
+            - key: Subject
+              value: {{ $emailSubjectZH | toJson }}
           text: |
 {{ $emailTextZH | indent 12 }}
           html: |

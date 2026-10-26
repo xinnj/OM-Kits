@@ -23,3 +23,6 @@ go.work
 
 packages/prometheus/values-adapter.yaml
 
+# Remote build configuration
+.env.local
+

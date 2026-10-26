@@ -9,6 +9,8 @@ base=$(dirname "$0")
 : "${IDO_FEISHU_ENABLED:?IDO_FEISHU_ENABLED must be set to true or false}"
 : "${IDO_WECHAT_ENABLED:?IDO_WECHAT_ENABLED must be set to true or false}"
 : "${IDO_ALERTING_LANG:?IDO_ALERTING_LANG must be set to en or zh}"
+# The chart renders the admission-webhook certgen image from this registry.
+: "${IDO_GHCR_CONTAINER_MIRROR:?IDO_GHCR_CONTAINER_MIRROR must be set (e.g. ghcr.io or ghcr.nju.edu.cn)}"
 
 echo "##########################################################################"
 echo "### Install Prometheus Stack ###"
@@ -72,7 +74,18 @@ fi
 # Install prometheus
 envsubst < "${base}/values-override.yaml" > "${base}/values.yaml"
 "${base}/../check-undefined-env.sh" "${base}/values.yaml"
-helm upgrade prometheus --install --create-namespace --namespace monitoring --timeout 30m -f "${base}"/values.yaml "${base}"/kube-prometheus-stack
+# Helm 4 applies server-side by default and refuses to overwrite fields owned
+# by another manager (an older client-side "helm" entry or a manual edit).
+# Take ownership so the upgrade can reconcile the object. Helm 3 has no such
+# flag, so add it only when the CLI supports it.
+force_conflicts=""
+helm_upgrade_help=$(helm upgrade --help 2>&1 || true)
+case "$helm_upgrade_help" in
+  *--force-conflicts*) force_conflicts="--force-conflicts" ;;
+esac
+unset helm_upgrade_help
+
+helm upgrade prometheus --install --create-namespace --namespace monitoring --timeout 30m ${force_conflicts} -f "${base}"/values.yaml "${base}"/kube-prometheus-stack
 
 # Remove the adapter when every channel is disabled.
 if [ "$dingtalk" = false ] && [ "$feishu" = false ] && [ "$wechat" = false ]; then

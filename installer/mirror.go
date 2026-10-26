@@ -12,9 +12,37 @@ var mirrors = map[string]string{
 	"QUAY_CONTAINER_MIRROR":   "quay.m.daocloud.io",
 	"K8S_CONTAINER_MIRROR":    "k8s.m.daocloud.io",
 	"GCR_CONTAINER_MIRROR":    "gcr.m.daocloud.io",
+	// DaoCloud's GHCR mirror rejects anonymous pulls, so default to the NJU one.
+	"GHCR_CONTAINER_MIRROR": "ghcr.nju.edu.cn",
 }
 var useOneMirror = false
 var oneMirror = ""
+
+// mirrorEnvVars returns the IDO_*_CONTAINER_MIRROR variables passed to the
+// install scripts. Upstream registries are used unless mirrors are enabled.
+func mirrorEnvVars(enableMirror, useOneMirror bool, oneMirror string, mirrors map[string]string) map[string]string {
+	upstream := map[string]string{
+		"DOCKER_CONTAINER_MIRROR": "docker.io",
+		"QUAY_CONTAINER_MIRROR":   "quay.io",
+		"K8S_CONTAINER_MIRROR":    "registry.k8s.io",
+		"GCR_CONTAINER_MIRROR":    "k8s-gcr.io",
+		"GHCR_CONTAINER_MIRROR":   "ghcr.io",
+	}
+
+	envs := make(map[string]string, len(upstream))
+	for key, upstreamValue := range upstream {
+		value := upstreamValue
+		if enableMirror {
+			if useOneMirror {
+				value = oneMirror
+			} else {
+				value = mirrors[key]
+			}
+		}
+		envs["IDO_"+key] = value
+	}
+	return envs
+}
 
 func initFlexMirror() {
 	flexMirror.Clear()
