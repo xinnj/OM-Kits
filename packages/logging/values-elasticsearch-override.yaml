@@ -183,7 +183,7 @@ extraEnvVarsSecret: ""
 ##
 sidecars:
   - name: index-template
-    image: ${IDO_DOCKER_CONTAINER_MIRROR}/bitnami/os-shell:12-debian-12-r49
+    image: ${IDO_DOCKER_CONTAINER_MIRROR}/bitnamilegacy/os-shell:12-debian-12-r49
     volumeMounts:
       - name: create-index-template
         mountPath: /scripts
@@ -226,7 +226,7 @@ useIstioLabels: true
 ##
 image:
   registry: docker.io
-  repository: bitnami/elasticsearch
+  repository: bitnamilegacy/elasticsearch
   tag: 9.1.0-debian-12-r0
   digest: ""
   ## Specify a imagePullPolicy
@@ -2240,7 +2240,7 @@ metrics:
   ##
   image:
     registry: docker.io
-    repository: bitnami/elasticsearch-exporter
+    repository: bitnamilegacy/elasticsearch-exporter
     tag: 1.9.0-debian-12-r14
     digest: ""
     pullPolicy: IfNotPresent
@@ -2680,7 +2680,7 @@ volumePermissions:
   ##
   image:
     registry: docker.io
-    repository: bitnami/os-shell
+    repository: bitnamilegacy/os-shell
     tag: 12-debian-12-r49
     digest: ""
     pullPolicy: IfNotPresent
@@ -2727,7 +2727,7 @@ sysctlImage:
   ## @param sysctlImage.pullSecrets Kernel settings modifier image pull secrets
   ##
   registry: docker.io
-  repository: bitnami/os-shell
+  repository: bitnamilegacy/os-shell
   tag: 12-debian-12-r49
   digest: ""
   ## Specify a imagePullPolicy
