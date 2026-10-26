@@ -210,7 +210,7 @@ readinessProbe:
 resources:
    limits:
      cpu: 100m
-     memory: 128Mi
+     memory: 256Mi
    requests:
      cpu: 100m
      memory: 128Mi
@@ -356,9 +356,15 @@ extraPorts: []
 #     name: tcp
 #     nodePort: 30517
 
-extraVolumes: []
+extraVolumes:
+  - name: tail-db
+    hostPath:
+      path: /var/lib/fluent-bit
+      type: DirectoryOrCreate
 
-extraVolumeMounts: []
+extraVolumeMounts:
+  - name: tail-db
+    mountPath: /var/lib/fluent-bit
 
 updateStrategy: {}
 #   type: RollingUpdate
@@ -416,6 +422,10 @@ config:
         HTTP_Listen 0.0.0.0
         HTTP_Port {{ .Values.metricsPort }}
         Health_Check On
+        # Filesystem buffering: chunks stay on the hostPath volume so an
+        # Elasticsearch outage or Fluent Bit restart does not lose data.
+        storage.path /var/lib/fluent-bit/buffer
+        storage.max_chunks_up 64
 
   ## https://docs.fluentbit.io/manual/pipeline/inputs
   inputs: |
@@ -426,7 +436,8 @@ config:
         Tag kube.*
         Mem_Buf_Limit 5MB
         Skip_Long_Lines On
-        DB /tmp/fluent-bit.db
+        Storage.Type filesystem
+        DB /var/lib/fluent-bit/fluent-bit.db
 
   ## https://docs.fluentbit.io/manual/pipeline/filters
   filters: |
@@ -472,6 +483,8 @@ config:
         Logstash_Format On
         Retry_Limit False
         Suppress_Type_Name On
+        # Per-output disk cap; oldest chunks are discarded once full.
+        storage.total_limit_size 1G
     [OUTPUT]
         Name http
         Match error
