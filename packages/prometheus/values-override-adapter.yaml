@@ -1,0 +1,42 @@
+## Values for the alertmanager-webhook-adapter.
+## This file is only consumed when at least one notification channel is enabled.
+## Channel enablement is gated by the AlertmanagerConfig CR via values-override.yaml.
+
+fullnameOverride: "alertmanager-webhook-adapter"
+
+image:
+  # The chart has no image.registry key, so the mirror prefix belongs here.
+  repository: "${IDO_DOCKER_CONTAINER_MIRROR}/xinnj/alertmanager-webhook-adapter"
+  tag: "1.0.1"
+  pullPolicy: IfNotPresent
+
+replicaCount: 1
+
+serviceAccount:
+  create: true
+  # The adapter does not call the Kubernetes API.
+  automount: false
+
+service:
+  type: ClusterIP
+  port: 80
+  targetPort: 8090
+
+config:
+  signature: "${IDO_ALERTING_SIGNATURE}"
+  lang: "${IDO_ALERTING_LANG}"
+  timezone: "${IDO_TIMEZONE}"
+  listenAddress: ":8090"
+  debug: false
+
+extraEnvFrom:
+  - secretRef:
+      name: alertmanager-webhook-adapter
+
+resources:
+  requests:
+    cpu: 100m
+    memory: 64Mi
+  limits:
+    cpu: 500m
+    memory: 256Mi

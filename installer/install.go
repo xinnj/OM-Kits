@@ -17,6 +17,7 @@ import (
 type task struct {
 	name    string
 	command string
+	envs    []string
 }
 
 var flexTop = tview.NewFlex()
@@ -218,8 +219,28 @@ func buildTasks() (tasks []task, envs []string) {
 	}
 
 	if installPrometheus {
+		promEnv := []string{}
+		if prometheusConfig.dingTalkEnabled {
+			promEnv = append(promEnv,
+				"IDO_DINGTALK_TOKEN="+strings.TrimSpace(prometheusConfig.dingTalkToken),
+				"IDO_DINGTALK_SECRET="+strings.TrimSpace(prometheusConfig.dingTalkSecret))
+		}
+		if prometheusConfig.feishuEnabled {
+			promEnv = append(promEnv,
+				"IDO_FEISHU_TOKEN="+strings.TrimSpace(prometheusConfig.feishuToken),
+				"IDO_FEISHU_SECRET="+strings.TrimSpace(prometheusConfig.feishuSecret))
+		}
+		if prometheusConfig.weChatEnabled {
+			promEnv = append(promEnv, "IDO_WECHAT_TOKEN="+strings.TrimSpace(prometheusConfig.weChatToken))
+		}
 		tasks = append(tasks, task{name: "Install Prometheus",
-			command: "chmod +x packages/prometheus/install.sh; packages/prometheus/install.sh"})
+			command: "chmod +x packages/prometheus/install.sh; packages/prometheus/install.sh",
+			envs:    promEnv})
+		envs = append(envs, "IDO_ALERTING_LANG="+prometheusConfig.adapterLang)
+		envs = append(envs, "IDO_ALERTING_SIGNATURE="+prometheusConfig.adapterSignature)
+		envs = append(envs, "IDO_DINGTALK_ENABLED="+strconv.FormatBool(prometheusConfig.dingTalkEnabled))
+		envs = append(envs, "IDO_FEISHU_ENABLED="+strconv.FormatBool(prometheusConfig.feishuEnabled))
+		envs = append(envs, "IDO_WECHAT_ENABLED="+strconv.FormatBool(prometheusConfig.weChatEnabled))
 		envs = append(envs, "IDO_ALTERMANAGER_STORAGE_SIZE="+strconv.Itoa(prometheusConfig.alertmanagerStorageSizeGi)+"Gi")
 		envs = append(envs, "IDO_GRAFANA_STORAGE_SIZE="+strconv.Itoa(prometheusConfig.grafanaStorageSizeGi)+"Gi")
 		envs = append(envs, "IDO_PROMETHEUS_STORAGE_SIZE="+strconv.Itoa(prometheusConfig.prometheusStorageSizeGi)+"Gi")
@@ -299,6 +320,9 @@ func execTasks(tasks []task, envs []string, view *tview.TextView) {
 
 		cmd.Env = os.Environ()
 		for _, env := range envs {
+			cmd.Env = append(cmd.Env, env)
+		}
+		for _, env := range task.envs {
 			cmd.Env = append(cmd.Env, env)
 		}
 
