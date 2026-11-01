@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"io"
 	"net"
 	"os"
@@ -29,6 +30,7 @@ var backButton *tview.Button
 var quitButton *tview.Button
 var logContent *tview.TextView
 var stopTimer = make(chan bool)
+var installWarning string
 
 func initFlexInstall() {
 	flexInstall.Clear()
@@ -58,6 +60,11 @@ func initFlexInstall() {
 			logContent.ScrollToEnd()
 			app.Draw()
 		})
+
+	if installWarning != "" {
+		fmt.Fprintln(logContent, installWarning)
+		installWarning = ""
+	}
 
 	flexTop.
 		AddItem(listTask, 0, 1, false).

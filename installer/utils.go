@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bytes"
 	"context"
 	"github.com/rivo/tview"
 	"os"
@@ -16,6 +17,10 @@ func check(e error) {
 }
 
 func execCommand(cmdString string, timeout int, envs ...string) ([]byte, error) {
+	return execCommandWithInput(nil, cmdString, timeout, envs...)
+}
+
+func execCommandWithInput(input []byte, cmdString string, timeout int, envs ...string) ([]byte, error) {
 	var cmd *exec.Cmd
 
 	if timeout > 0 {
@@ -30,6 +35,10 @@ func execCommand(cmdString string, timeout int, envs ...string) ([]byte, error) 
 	cmd.Env = os.Environ()
 	for _, env := range envs {
 		cmd.Env = append(cmd.Env, env)
+	}
+
+	if input != nil {
+		cmd.Stdin = bytes.NewReader(input)
 	}
 
 	output, err := cmd.CombinedOutput()

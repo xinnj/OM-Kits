@@ -35,6 +35,9 @@ func main() {
 		panic("Can't connect to k8s cluster!")
 	}
 
+	// Best-effort: defaults remain when the ConfigMap is absent or unreadable.
+	_ = loadState()
+
 	initFlexBasicInfo()
 
 	pages.AddPage("Quit", modalQuit, true, false)

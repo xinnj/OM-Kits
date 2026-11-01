@@ -219,7 +219,7 @@ func initFlexPackages() {
 		restoreAdapterState()
 	}
 
-	storageClasses = getStorageClasses()
+	storageClasses = mergeStorageClasses(getStorageClasses(), prometheusConfig.storageClass, loggingConfig.storageClass)
 	flexPackages.Clear()
 	flexList := tview.NewFlex()
 	flexList.SetTitle("Packages").SetBorder(true)
@@ -331,20 +331,7 @@ func restoreAdapterState() {
 	output, err := execCommand(
 		`kubectl -n monitoring get secret alertmanager-webhook-adapter -o go-template='{{range $k, $v := .data}}{{$k}}={{$v | base64decode}}{{"\n"}}{{end}}' 2>/dev/null`, 0)
 	if err == nil {
-		creds := make(map[string]string)
-		for _, line := range strings.Split(strings.TrimRight(string(output), "\n"), "\n") {
-			if key, value, ok := strings.Cut(line, "="); ok {
-				creds[key] = value
-			}
-		}
-		prometheusConfig.dingTalkToken = creds["DINGTALK_TOKEN"]
-		prometheusConfig.dingTalkSecret = creds["DINGTALK_SECRET"]
-		prometheusConfig.dingTalkEnabled = creds["DINGTALK_TOKEN"] != "" && creds["DINGTALK_SECRET"] != ""
-		prometheusConfig.feishuToken = creds["FEISHU_TOKEN"]
-		prometheusConfig.feishuSecret = creds["FEISHU_SECRET"]
-		prometheusConfig.feishuEnabled = creds["FEISHU_TOKEN"] != "" && creds["FEISHU_SECRET"] != ""
-		prometheusConfig.weChatToken = creds["WEIXIN_TOKEN"]
-		prometheusConfig.weChatEnabled = creds["WEIXIN_TOKEN"] != ""
+		applyRestoredAdapterCredentials(parseAdapterCredentials(output))
 	}
 
 	output, err = execCommand(
@@ -352,7 +339,44 @@ func restoreAdapterState() {
 	if err != nil {
 		return
 	}
-	for _, line := range strings.Split(string(output), "\n") {
+	applyRestoredAdapterArgs(strings.Split(string(output), "\n"))
+}
+
+func parseAdapterCredentials(output []byte) map[string]string {
+	creds := make(map[string]string)
+	for _, line := range strings.Split(strings.TrimRight(string(output), "\n"), "\n") {
+		if key, value, ok := strings.Cut(line, "="); ok {
+			creds[key] = value
+		}
+	}
+	return creds
+}
+
+// applyRestoredAdapterCredentials always takes tokens from the adapter Secret.
+// Saved answers win for channel enablement, which is a user choice rather than
+// a credential.
+func applyRestoredAdapterCredentials(creds map[string]string) {
+	prometheusConfig.dingTalkToken = creds["DINGTALK_TOKEN"]
+	prometheusConfig.dingTalkSecret = creds["DINGTALK_SECRET"]
+	prometheusConfig.feishuToken = creds["FEISHU_TOKEN"]
+	prometheusConfig.feishuSecret = creds["FEISHU_SECRET"]
+	prometheusConfig.weChatToken = creds["WEIXIN_TOKEN"]
+
+	if persistedStateLoaded {
+		return
+	}
+	prometheusConfig.dingTalkEnabled = creds["DINGTALK_TOKEN"] != "" && creds["DINGTALK_SECRET"] != ""
+	prometheusConfig.feishuEnabled = creds["FEISHU_TOKEN"] != "" && creds["FEISHU_SECRET"] != ""
+	prometheusConfig.weChatEnabled = creds["WEIXIN_TOKEN"] != ""
+}
+
+// applyRestoredAdapterArgs applies adapter settings unless the user's saved
+// answers already provided them.
+func applyRestoredAdapterArgs(lines []string) {
+	if persistedStateLoaded {
+		return
+	}
+	for _, line := range lines {
 		line = strings.TrimSpace(line)
 		switch {
 		case strings.HasPrefix(line, "--signature="):
@@ -438,10 +462,7 @@ func selectPackage(index int, mainText string) {
 				})
 
 			adapterLangOptions := []string{"zh", "en"}
-			adapterLangIndex := slices.Index(adapterLangOptions, prometheusConfig.adapterLang)
-			if adapterLangIndex < 0 {
-				adapterLangIndex = 0
-			}
+			adapterLangIndex := dropdownIndex(adapterLangOptions, prometheusConfig.adapterLang, "zh")
 			formPackage.AddDropDown("Alert message language: ", adapterLangOptions, adapterLangIndex,
 				func(option string, optionIndex int) {
 					prometheusConfig.adapterLang = option
@@ -533,7 +554,7 @@ func selectPackage(index int, mainText string) {
 			})
 
 			resourcesPresets := []string{"nano", "micro", "small", "medium", "large", "xlarge", "2xlarge"}
-			initialOption = slices.Index(resourcesPresets, "medium")
+			initialOption = dropdownIndex(resourcesPresets, loggingConfig.resourcesPreset, "medium")
 			formPackage.AddDropDown("Resources preset: ", resourcesPresets, initialOption, func(option string, optionIndex int) {
 				loggingConfig.resourcesPreset = option
 			})
@@ -556,6 +577,27 @@ func selectPackage(index int, mainText string) {
 				})
 		}
 	}
+}
+
+// dropdownIndex returns the index of value, falling back to the index of
+// fallback (or -1) when value is not one of the options.
+func dropdownIndex(options []string, value, fallback string) int {
+	if index := slices.Index(options, value); index >= 0 {
+		return index
+	}
+	return slices.Index(options, fallback)
+}
+
+// mergeStorageClasses keeps the live cluster list and appends remembered
+// classes that are no longer reported by the cluster, so a restored selection
+// is still visible in the dropdown.
+func mergeStorageClasses(classes []string, saved ...string) []string {
+	for _, class := range saved {
+		if class != "" && !slices.Contains(classes, class) {
+			classes = append(classes, class)
+		}
+	}
+	return classes
 }
 
 func getStorageClasses() []string {

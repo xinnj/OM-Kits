@@ -101,6 +101,11 @@ func initFlexMirror() {
 			}
 		}
 
+		installWarning = ""
+		if err := saveState(); err != nil {
+			installWarning = "Could not save settings to ConfigMap " +
+				stateConfigMapNamespace + "/" + stateConfigMapName + ": " + err.Error()
+		}
 		initFlexInstall()
 		pages.SwitchToPage("Install")
 	})
