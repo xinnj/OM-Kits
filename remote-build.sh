@@ -32,6 +32,10 @@ fi
 # shellcheck source=/dev/null
 source "${ENV_FILE}"
 
+# The remote copy excludes .git, so resolve the version locally and inject it
+# into the binary with -ldflags. VERSION from .env.local takes precedence.
+VERSION="${VERSION:-$(git -C "${SCRIPT_DIR}" describe --tags --always --dirty 2>/dev/null || echo dev)}"
+
 for var in REMOTE_USER REMOTE_HOST REMOTE_PORT REMOTE_PATH; do
     if [[ -z "${!var:-}" ]]; then
         echo_error "${var} is not set in ${ENV_FILE}"
@@ -72,7 +76,7 @@ step2_build() {
     echo_info "Step 2: Building linux/amd64 binary on ${REMOTE_HOST}..."
 
     ssh "${SSH_OPTS[@]}" "${REMOTE}" \
-        "cd ${REMOTE_PATH}/installer && source ~/.profile && go version && CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o ../om-kits-installer ."
+        "cd ${REMOTE_PATH}/installer && source ~/.profile && go version && CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -ldflags '-X main.version=${VERSION}' -o ../om-kits-installer ."
 
     echo_info "Build completed."
 }

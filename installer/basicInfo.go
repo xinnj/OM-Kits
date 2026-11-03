@@ -1,13 +1,14 @@
 package main
 
 import (
+	"net"
+	"net/mail"
+	"strings"
+
 	"github.com/gdamore/tcell/v2"
 	"github.com/rivo/tview"
 	"github.com/thlib/go-timezone-local/tzlocal"
 	"golang.org/x/exp/slices"
-	"net"
-	"net/mail"
-	"strings"
 )
 
 type BasicInfo struct {
@@ -138,14 +139,20 @@ func initFlexBasicInfo() {
 
 	textView := tview.NewTextView().
 		SetTextAlign(tview.AlignLeft).
-		SetTextColor(tcell.ColorDarkRed).
-		SetText("Keyboard Usage:\nTab / Shift-Tab: move focus inside a block\nCtrl-N / Ctrl-P: move focus among blocks")
+		SetTextColor(tcell.ColorWhiteSmoke).
+		SetText("Keyboard Usage:\nTab / Shift-Tab: move focus inside a block\nCtrl-N / Ctrl-P: move focus among blocks\n\n" + versionString())
 	textView.SetBorder(false)
+	textView.SetBackgroundColor(tview.Styles.PrimitiveBackgroundColor)
+	textView.SetMouseCapture(func(action tview.MouseAction, event *tcell.EventMouse) (tview.MouseAction, *tcell.EventMouse) {
+		return action, nil
+	})
 
 	flexBasicInfo.SetDirection(tview.FlexRow).
-		AddItem(formBasicInfo, 0, 1, true).
-		AddItem(formDown, 3, 1, false).
-		AddItem(textView, 5, 1, false)
+		AddItem(nil, 0, 1, false).
+		AddItem(formBasicInfo, 16, 1, true).
+		AddItem(formDown, 5, 1, false).
+		AddItem(nil, 0, 1, false).
+		AddItem(textView, 6, 1, false)
 
 	app.SetFocus(formBasicInfo)
 

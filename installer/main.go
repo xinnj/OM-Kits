@@ -1,6 +1,9 @@
 package main
 
 import (
+	"errors"
+	"flag"
+	"fmt"
 	"github.com/gdamore/tcell/v2"
 	"github.com/rivo/tview"
 	"os"
@@ -18,6 +21,25 @@ var flexMirror = tview.NewFlex()
 var flexInstall = tview.NewFlex()
 
 func main() {
+	opts, err := parseOptions(os.Args[1:])
+	if err != nil {
+		if errors.Is(err, flag.ErrHelp) {
+			printUsage(os.Stdout)
+			return
+		}
+		fmt.Fprintln(os.Stderr, "om-kits-installer:", err)
+		fmt.Fprintln(os.Stderr, "Run 'om-kits-installer --help' for usage.")
+		os.Exit(2)
+	}
+	if opts.showVersion {
+		fmt.Println(versionString())
+		return
+	}
+	if err := applyKubeconfig(opts.kubeconfig); err != nil {
+		fmt.Fprintln(os.Stderr, "om-kits-installer:", err)
+		os.Exit(1)
+	}
+
 	ex, err := os.Executable()
 	check(err)
 	appPath = filepath.Dir(ex)
